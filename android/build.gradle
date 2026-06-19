@@ -27,16 +27,16 @@ apply plugin: "com.facebook.react.rootproject"
 // with "Namespace not specified". This injects the namespace from each such
 // library's manifest so they build cleanly on the classic architecture.
 subprojects { subproject ->
-    afterEvaluate {
-        if (subproject.plugins.hasPlugin("com.android.library")) {
-            def androidExt = subproject.extensions.findByName("android")
-            if (androidExt != null && androidExt.namespace == null) {
-                def manifestFile = subproject.file("src/main/AndroidManifest.xml")
-                if (manifestFile.exists()) {
-                    def matcher = (manifestFile.getText("UTF-8") =~ /package\s*=\s*"([^"]+)"/)
-                    if (matcher.find()) {
-                        androidExt.namespace = matcher.group(1)
-                    }
+    // plugins.withId fires while the library is being configured (not after it
+    // is already evaluated), so we can safely set its namespace in time for AGP.
+    subproject.plugins.withId("com.android.library") {
+        def androidExt = subproject.extensions.findByName("android")
+        if (androidExt != null && androidExt.namespace == null) {
+            def manifestFile = subproject.file("src/main/AndroidManifest.xml")
+            if (manifestFile.exists()) {
+                def matcher = (manifestFile.getText("UTF-8") =~ /package\s*=\s*"([^"]+)"/)
+                if (matcher.find()) {
+                    androidExt.namespace = matcher.group(1)
                 }
             }
         }
