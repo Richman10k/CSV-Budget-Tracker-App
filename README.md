@@ -38,7 +38,7 @@ access**.
 | Framework | React Native 0.76 (Hermes) |
 | Navigation | @react-navigation (native / bottom-tabs / stack) |
 | CSV / data | papaparse, lodash, react-native-sqlite-storage |
-| Security | react-native-sensitive-info (Keystore), react-native-biometrics, react-native-encrypted-storage, crypto-js, react-native-get-random-values |
+| Security | react-native-encrypted-storage (Keystore), react-native-biometrics, crypto-js, react-native-get-random-values |
 | Animation | react-native-reanimated 3, react-native-gesture-handler |
 | Charts / UI | react-native-svg (custom charts), react-native-paper, react-native-vector-icons |
 | Files | react-native-document-picker, react-native-fs |
@@ -50,6 +50,11 @@ access**.
 > `react-native-screens` / `react-native-safe-area-context` (navigation peers)
 > were added beyond the original brief because the features require them.
 > `@d11/react-native-fast-image` is the maintained fork of `react-native-fast-image`.
+> `react-native-sensitive-info` (from the brief) was replaced by
+> `react-native-encrypted-storage` for the Keystore-backed master key — its v6
+> moved to Nitro Modules (New Architecture only), which is incompatible with this
+> app's classic-architecture build. Both store the key in the Android Keystore,
+> so the security guarantee is identical.
 
 ---
 

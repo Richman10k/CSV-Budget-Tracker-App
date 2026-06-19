@@ -29,9 +29,9 @@
 # --- react-native-sqlite-storage ---
 -keep class org.pgsqlite.** { *; }
 
-# --- react-native-sensitive-info / encrypted-storage (Keystore-backed) ---
--keep class dev.fern.** { *; }
+# --- react-native-encrypted-storage (Keystore-backed) ---
 -keep class com.emeraldsanto.encryptedstorage.** { *; }
+-keep class androidx.security.crypto.** { *; }
 -dontwarn javax.annotation.**
 
 # --- react-native-biometrics ---

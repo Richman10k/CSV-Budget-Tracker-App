@@ -1,23 +1,16 @@
 /**
- * SecureStorage.js — thin wrapper over the two secure native stores.
+ * SecureStorage.js — thin wrapper over the secure native store.
  *
- *   - react-native-sensitive-info  -> holds the AES master key in the
- *     hardware-backed Android Keystore. The key never appears in plaintext
- *     anywhere else and is not included in device backups.
- *   - react-native-encrypted-storage -> holds the PIN hash record and
- *     non-secret app settings (also Keystore-backed encryption).
+ *   - react-native-encrypted-storage -> Keystore-backed encrypted storage that
+ *     holds the AES master key, the PIN hash record, and non-secret app
+ *     settings. It uses Android's EncryptedSharedPreferences (AES via the
+ *     hardware-backed Keystore), so the master key never appears in plaintext
+ *     and is excluded from device backups.
  *
- * Keeping these behind one module means the rest of the app never talks to a
+ * Keeping this behind one module means the rest of the app never talks to a
  * raw storage API and we can swap implementations without ripple effects.
  */
-import SInfo from 'react-native-sensitive-info';
 import EncryptedStorage from 'react-native-encrypted-storage';
-
-// Namespacing for the Keystore-backed shared preferences / keychain service.
-const KEYSTORE_OPTS = {
-  sharedPreferencesName: 'csvbt_secure_prefs',
-  keychainService: 'csvbt_keychain',
-};
 
 const MASTER_KEY = 'csvbt.master_key.v1';
 const PIN_KEY = 'csvbt.pin_record.v1';
@@ -28,7 +21,7 @@ const SETTINGS_KEY = 'csvbt.settings.v1';
 /** Read the base64 master key from the Keystore (or null on first launch). */
 export async function getMasterKeyMaterial() {
   try {
-    const value = await SInfo.getItem(MASTER_KEY, KEYSTORE_OPTS);
+    const value = await EncryptedStorage.getItem(MASTER_KEY);
     return value || null;
   } catch (e) {
     return null;
@@ -37,7 +30,7 @@ export async function getMasterKeyMaterial() {
 
 /** Persist the base64 master key into the Keystore. */
 export async function setMasterKeyMaterial(base64Key) {
-  await SInfo.setItem(MASTER_KEY, base64Key, KEYSTORE_OPTS);
+  await EncryptedStorage.setItem(MASTER_KEY, base64Key);
 }
 
 /* ------------------------------- PIN ----------------------------------- */

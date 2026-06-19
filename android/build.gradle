@@ -19,3 +19,26 @@ buildscript {
 }
 
 apply plugin: "com.facebook.react.rootproject"
+
+// AGP 8 requires every Android module to declare a `namespace`. A few older
+// React Native libraries (react-native-fs, react-native-biometrics,
+// react-native-encrypted-storage) still declare their package only via the
+// AndroidManifest `package` attribute and would otherwise fail to configure
+// with "Namespace not specified". This injects the namespace from each such
+// library's manifest so they build cleanly on the classic architecture.
+subprojects { subproject ->
+    afterEvaluate {
+        if (subproject.plugins.hasPlugin("com.android.library")) {
+            def androidExt = subproject.extensions.findByName("android")
+            if (androidExt != null && androidExt.namespace == null) {
+                def manifestFile = subproject.file("src/main/AndroidManifest.xml")
+                if (manifestFile.exists()) {
+                    def matcher = (manifestFile.getText("UTF-8") =~ /package\s*=\s*"([^"]+)"/)
+                    if (matcher.find()) {
+                        androidExt.namespace = matcher.group(1)
+                    }
+                }
+            }
+        }
+    }
+}
