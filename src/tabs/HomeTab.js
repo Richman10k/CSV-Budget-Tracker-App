@@ -20,7 +20,6 @@ import TransactionRow from '../components/TransactionRow';
 import MonthSwitcher from '../components/MonthSwitcher';
 import SpendingOverview from '../budget/SpendingOverview';
 import {CategoryBars} from '../budget/CategoryChart';
-import {fadeIn} from '../animations/SmoothAnimations';
 import {colors, spacing, typography, radius} from '../theme/theme';
 import {formatCurrency} from '../utils/formatCurrency';
 
@@ -154,13 +153,13 @@ export default function HomeTab({navigation}) {
         </Card>
 
         {topCategories.length > 0 ? (
-          <Animated.View entering={fadeIn(80)}>
+          <View>
             <View style={styles.gap} />
             <SectionHeader title="Top categories" />
             <Card>
               <CategoryBars data={topCategories} currency={currency} />
             </Card>
-          </Animated.View>
+          </View>
         ) : null}
 
         <View style={styles.gap} />

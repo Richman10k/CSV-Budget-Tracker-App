@@ -21,6 +21,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {useAppData} from '../context/AppDataContext';
 import Header from '../components/Header';
 import Card from '../components/Card';
+import PressableScale from '../components/PressableScale';
 import PINLock from '../auth/PINLock';
 import {useCsvImport} from './HomeTab';
 import {colors, spacing, typography, radius} from '../theme/theme';
@@ -35,10 +36,10 @@ function autoLockLabel(secs) {
 
 function SettingRow({icon, label, subtitle, right, onPress, danger}) {
   return (
-    <Pressable
+    <PressableScale
       onPress={onPress}
       disabled={!onPress}
-      android_ripple={onPress ? {color: colors.ripple} : undefined}
+      scaleTo={0.98}
       style={styles.row}>
       <Icon
         name={icon}
@@ -53,7 +54,7 @@ function SettingRow({icon, label, subtitle, right, onPress, danger}) {
         {subtitle ? <Text style={styles.rowSub}>{subtitle}</Text> : null}
       </View>
       {right}
-    </Pressable>
+    </PressableScale>
   );
 }
 

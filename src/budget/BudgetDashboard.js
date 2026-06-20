@@ -34,11 +34,11 @@ export default function BudgetDashboard() {
       screenOptions={{
         headerShown: false,
         lazy: true,
-        // Quick cross-tab transition (slide + fade) instead of an instant cut.
-        animation: 'shift',
+        // Quick, smooth cross-fade between tabs (no layout movement = no jank).
+        animation: 'fade',
         transitionSpec: {
           animation: 'timing',
-          config: {duration: 220},
+          config: {duration: 200},
         },
       }}
       tabBar={props => <TabBar {...props} />}>

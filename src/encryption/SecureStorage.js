@@ -68,7 +68,7 @@ export async function clearPinRecord() {
 
 const DEFAULT_SETTINGS = {
   biometricsEnabled: true,
-  autoLockSeconds: 30,
+  autoLockSeconds: 0, // Off by default; app still locks on close/reopen
   currency: 'USD',
   lockOnBackground: true,
 };

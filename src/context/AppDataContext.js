@@ -65,7 +65,7 @@ export function AppDataProvider({children}) {
   const [unlocked, setUnlocked] = useState(false);
   const [settings, setSettings] = useState({
     biometricsEnabled: true,
-    autoLockSeconds: 30,
+    autoLockSeconds: 0, // Off by default (still locks on close/reopen)
     lockOnBackground: true,
     currency: 'USD',
   });
@@ -104,8 +104,13 @@ export function AppDataProvider({children}) {
     })();
   }, []);
 
-  /** Reload the decrypted dataset from the database. */
-  const refreshAll = useCallback(async () => {
+  /**
+   * Reload the decrypted dataset from the database. When `autoSelectMonth` is
+   * true (on unlock / after import) we jump the month view to the most recent
+   * month that actually has data, so screens aren't blank when the imported
+   * data is from a different month than today.
+   */
+  const refreshAll = useCallback(async (autoSelectMonth = false) => {
     const [tx, subs, budgetMap] = await Promise.all([
       TransactionModel.getAll(),
       SubscriptionModel.getAll(),
@@ -114,6 +119,11 @@ export function AppDataProvider({children}) {
     setTransactions(tx);
     setSubscriptions(subs);
     setBudgets(budgetMap);
+    if (autoSelectMonth && tx.length > 0) {
+      const latest = tx.reduce((m, t) => (t.date > m ? t.date : m), 0);
+      const d = new Date(latest);
+      setSelectedMonth({year: d.getFullYear(), month: d.getMonth()});
+    }
   }, []);
 
   /** Lock the app: wipe decrypted data from memory + forget crypto keys. */
@@ -150,7 +160,7 @@ export function AppDataProvider({children}) {
   const unlock = useCallback(async () => {
     setUnlocked(true);
     unlockedRef.current = true;
-    await refreshAll();
+    await refreshAll(true);
     resetActivity();
   }, [refreshAll, resetActivity]);
 
@@ -191,7 +201,7 @@ export function AppDataProvider({children}) {
       if (parsed.transactions.length > 0) {
         stats = await TransactionModel.insertMany(parsed.transactions);
         await runDetection();
-        await refreshAll();
+        await refreshAll(true);
       }
       return {
         cancelled: false,

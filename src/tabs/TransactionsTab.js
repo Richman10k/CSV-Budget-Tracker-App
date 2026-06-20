@@ -4,13 +4,14 @@
  * getItemLayout) so scrolling stays smooth at high refresh rates.
  */
 import React, {useState, useMemo, useCallback} from 'react';
-import {View, Text, FlatList, Pressable, StyleSheet} from 'react-native';
+import {View, Text, FlatList, StyleSheet} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
 import {useAppData} from '../context/AppDataContext';
 import Header from '../components/Header';
 import SearchBar from '../components/SearchBar';
 import EmptyState from '../components/EmptyState';
+import PressableScale from '../components/PressableScale';
 import TransactionRow, {ROW_HEIGHT} from '../components/TransactionRow';
 import {useCsvImport} from './HomeTab';
 import {colors, spacing, typography, radius} from '../theme/theme';
@@ -25,14 +26,14 @@ const SEP_HEIGHT = 1;
 
 function FilterChip({label, active, onPress}) {
   return (
-    <Pressable
+    <PressableScale
       onPress={onPress}
-      android_ripple={{color: colors.ripple, borderless: false}}
+      scaleTo={0.94}
       style={[styles.chip, active && styles.chipActive]}>
       <Text style={[styles.chipLabel, active && styles.chipLabelActive]}>
         {label}
       </Text>
-    </Pressable>
+    </PressableScale>
   );
 }
 

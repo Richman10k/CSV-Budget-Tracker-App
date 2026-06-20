@@ -6,13 +6,14 @@
  * the user scrolls, all on the UI thread.
  */
 import React from 'react';
-import {View, Pressable, StyleSheet} from 'react-native';
+import {View, StyleSheet} from 'react-native';
 import Animated, {
   useAnimatedStyle,
   interpolate,
   Extrapolation,
 } from 'react-native-reanimated';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import PressableScale from './PressableScale';
 import {colors, spacing, typography} from '../theme/theme';
 
 function HeaderAction({icon, onPress, color = colors.text}) {
@@ -20,13 +21,15 @@ function HeaderAction({icon, onPress, color = colors.text}) {
     return <View style={styles.actionPlaceholder} />;
   }
   return (
-    <Pressable
+    <PressableScale
       onPress={onPress}
       hitSlop={12}
-      android_ripple={{color: colors.ripple, borderless: true, radius: 24}}
+      scaleTo={0.86}
+      rippleBorderless
+      rippleRadius={24}
       style={styles.action}>
       <Icon name={icon} size={24} color={color} />
-    </Pressable>
+    </PressableScale>
   );
 }
 

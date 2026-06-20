@@ -22,9 +22,9 @@ function TransactionRow({transaction, currency = 'USD', onPress}) {
       style={styles.row}>
       <View style={[styles.iconWrap, {backgroundColor: `${tint}22`}]}>
         <Icon
-          name={isIncome ? 'arrow-down' : 'arrow-up'}
+          name={isIncome ? 'arrow-up' : 'arrow-down'}
           size={20}
-          color={isIncome ? colors.income : tint}
+          color={isIncome ? colors.income : colors.expense}
         />
       </View>
       <View style={styles.center}>

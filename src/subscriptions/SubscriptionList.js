@@ -4,13 +4,12 @@
  * and any risk flags.
  */
 import React, {useState, useMemo} from 'react';
-import {View, Text, FlatList, Pressable, StyleSheet} from 'react-native';
-import Animated from 'react-native-reanimated';
+import {View, Text, FlatList, StyleSheet} from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import Card from '../components/Card';
 import EmptyState from '../components/EmptyState';
-import {enterFromBottom} from '../animations/SmoothAnimations';
+import PressableScale from '../components/PressableScale';
 import {colors, spacing, typography, radius} from '../theme/theme';
 import {formatCurrency} from '../utils/formatCurrency';
 import {formatShortDate} from '../utils/formatDate';
@@ -25,20 +24,22 @@ const STATUS_TABS = [
 
 function StatusTab({label, count, active, onPress}) {
   return (
-    <Pressable onPress={onPress} style={[styles.tab, active && styles.tabActive]}>
+    <PressableScale
+      onPress={onPress}
+      scaleTo={0.94}
+      style={[styles.tab, active && styles.tabActive]}>
       <Text style={[styles.tabLabel, active && styles.tabLabelActive]}>
         {label} {count > 0 ? `(${count})` : ''}
       </Text>
-    </Pressable>
+    </PressableScale>
   );
 }
 
-function SubscriptionCard({sub, currency, onPress, index}) {
+function SubscriptionCard({sub, currency, onPress}) {
   const monthly = monthlyEquivalent(sub.amount, sub.interval);
   return (
-    <Animated.View entering={enterFromBottom(index)}>
-      <Card onPress={onPress} style={styles.card}>
-        <View style={styles.cardRow}>
+    <Card onPress={onPress} style={styles.card}>
+      <View style={styles.cardRow}>
           <View style={styles.logo}>
             <Text style={styles.logoText}>
               {(sub.name || '?').charAt(0).toUpperCase()}
@@ -71,7 +72,6 @@ function SubscriptionCard({sub, currency, onPress, index}) {
           </View>
         ) : null}
       </Card>
-    </Animated.View>
   );
 }
 

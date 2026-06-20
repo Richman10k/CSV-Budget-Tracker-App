@@ -2,8 +2,9 @@
  * MonthSwitcher.js — "< June 2026 >" pill for moving between months.
  */
 import React from 'react';
-import {View, Text, Pressable, StyleSheet} from 'react-native';
+import {View, Text, StyleSheet} from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import PressableScale from './PressableScale';
 import {colors, spacing, typography, radius} from '../theme/theme';
 import {formatMonthYear} from '../utils/formatDate';
 
@@ -17,21 +18,25 @@ export default function MonthSwitcher({year, month, onChange}) {
 
   return (
     <View style={styles.container}>
-      <Pressable
+      <PressableScale
         onPress={() => shift(-1)}
         hitSlop={10}
-        android_ripple={{color: colors.ripple, borderless: true, radius: 20}}
+        scaleTo={0.88}
+        rippleBorderless
+        rippleRadius={20}
         style={styles.arrow}>
         <Icon name="chevron-left" size={24} color={colors.text} />
-      </Pressable>
+      </PressableScale>
       <Text style={styles.label}>{formatMonthYear(ms)}</Text>
-      <Pressable
+      <PressableScale
         onPress={() => shift(1)}
         hitSlop={10}
-        android_ripple={{color: colors.ripple, borderless: true, radius: 20}}
+        scaleTo={0.88}
+        rippleBorderless
+        rippleRadius={20}
         style={styles.arrow}>
         <Icon name="chevron-right" size={24} color={colors.text} />
-      </Pressable>
+      </PressableScale>
     </View>
   );
 }

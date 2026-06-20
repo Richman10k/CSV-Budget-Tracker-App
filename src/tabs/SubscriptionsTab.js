@@ -3,13 +3,14 @@
  * the status-tabbed list, and a manual "add subscription" flow.
  */
 import React, {useState, useCallback} from 'react';
-import {View, Text, StyleSheet, Pressable, Alert} from 'react-native';
+import {View, Text, StyleSheet, Alert} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import {useAppData} from '../context/AppDataContext';
 import Header from '../components/Header';
 import Card from '../components/Card';
+import PressableScale from '../components/PressableScale';
 import EmptyState from '../components/EmptyState';
 import SubscriptionList from '../subscriptions/SubscriptionList';
 import SubscriptionFormModal from '../subscriptions/SubscriptionFormModal';
@@ -99,9 +100,9 @@ export default function SubscriptionsTab({navigation}) {
           />
           <Stat label="Due soon" value={String(subscriptionSummary.dueSoon)} />
         </View>
-        <Pressable
+        <PressableScale
           onPress={rerunDetection}
-          android_ripple={{color: colors.ripple}}
+          scaleTo={0.96}
           style={styles.rescan}>
           <Icon
             name={busy ? 'loading' : 'magnify-scan'}
@@ -111,7 +112,7 @@ export default function SubscriptionsTab({navigation}) {
           <Text style={styles.rescanText}>
             {busy ? 'Scanning…' : 'Rescan transactions'}
           </Text>
-        </Pressable>
+        </PressableScale>
       </Card>
 
       <SubscriptionList

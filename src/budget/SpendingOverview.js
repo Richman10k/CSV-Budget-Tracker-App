@@ -88,13 +88,13 @@ export default function SpendingOverview({
 
       <View style={styles.chips}>
         <Chip
-          icon="arrow-down-circle"
+          icon="arrow-up-circle"
           label="Income"
           value={formatCurrency(income, currency)}
           color={colors.income}
         />
         <Chip
-          icon="arrow-up-circle"
+          icon="arrow-down-circle"
           label="Expenses"
           value={formatCurrency(spending, currency)}
           color={colors.expense}

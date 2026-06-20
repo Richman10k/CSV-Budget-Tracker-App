@@ -8,6 +8,7 @@
  * list of per-row errors so a malformed file never crashes the app.
  */
 import Papa from 'papaparse';
+import {categorize} from '../utils/categorize';
 
 // Header synonyms (compared lower-cased + trimmed).
 const FIELD_SYNONYMS = {
@@ -204,6 +205,13 @@ export function parseCSV(content) {
       ? String(row[cols.description] || '').trim()
       : '';
 
+    // Use the CSV's own category if present, otherwise auto-categorize from the
+    // merchant/description text so nothing shows up as "Uncategorized".
+    const csvCategory = cols.category
+      ? String(row[cols.category] || '').trim()
+      : '';
+    const category = csvCategory || categorize(description, at.type);
+
     result.transactions.push({
       date: dateMs,
       description: description || 'Transaction',
@@ -211,7 +219,7 @@ export function parseCSV(content) {
       amount: at.amount,
       type: at.type,
       balance: cols.balance ? parseAmount(row[cols.balance]) : null,
-      category: cols.category ? String(row[cols.category] || '').trim() : '',
+      category,
       source: 'csv',
     });
   });
