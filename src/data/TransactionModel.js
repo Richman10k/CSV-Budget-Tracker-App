@@ -75,9 +75,42 @@ export async function decodeRow(row) {
   };
 }
 
-/** Decrypt a list of rows in parallel. */
+/**
+ * Decrypt a list of rows in parallel. Rows that can't be decrypted with the
+ * current key (legacy/corrupt data) are skipped and purged so a single bad row
+ * never breaks the whole screen.
+ */
 export async function decodeRows(rows) {
-  return Promise.all(rows.map(decodeRow));
+  const decoded = await Promise.all(
+    rows.map(async row => {
+      try {
+        return await decodeRow(row);
+      } catch (e) {
+        return {__corruptId: row.id};
+      }
+    }),
+  );
+  const good = [];
+  const corruptIds = [];
+  decoded.forEach(r => {
+    if (r && r.__corruptId != null) {
+      corruptIds.push(r.__corruptId);
+    } else {
+      good.push(r);
+    }
+  });
+  if (corruptIds.length > 0) {
+    const placeholders = corruptIds.map(() => '?').join(',');
+    try {
+      await run(
+        `DELETE FROM transactions WHERE id IN (${placeholders});`,
+        corruptIds,
+      );
+    } catch (e) {
+      // best-effort cleanup
+    }
+  }
+  return good;
 }
 
 /* ------------------------------- Writes -------------------------------- */

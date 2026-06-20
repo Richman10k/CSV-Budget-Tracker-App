@@ -36,6 +36,12 @@ const CONTROL_CHARS_RE = new RegExp('[\\u0000-\\u001F\\u007F]', 'g');
 // Cached derived keys for the lifetime of an unlocked session. Cleared on lock.
 let cachedEncKey = null; // CryptoJS.WordArray
 let cachedMacKey = null; // CryptoJS.WordArray
+// A single in-flight key-initialization promise. Without this, the first import
+// fires hundreds of encrypt() calls in parallel that each see "no key yet" and
+// generate a DIFFERENT throwaway key, corrupting the data so it can't be
+// decrypted later ("Authentication failed"). Sharing one promise guarantees the
+// master key is generated/loaded exactly once.
+let keyInitPromise = null;
 
 /** Generate `n` cryptographically secure random bytes as a CryptoJS WordArray. */
 function secureRandomWordArray(n) {
@@ -62,16 +68,25 @@ async function ensureKeys() {
   if (cachedEncKey && cachedMacKey) {
     return;
   }
-  let b64 = await getMasterKeyMaterial();
-  if (!b64) {
-    const fresh = secureRandomWordArray(KEY_BYTES);
-    b64 = CryptoJS.enc.Base64.stringify(fresh);
-    await setMasterKeyMaterial(b64);
+  if (!keyInitPromise) {
+    keyInitPromise = (async () => {
+      let b64 = await getMasterKeyMaterial();
+      if (!b64) {
+        const fresh = secureRandomWordArray(KEY_BYTES);
+        b64 = CryptoJS.enc.Base64.stringify(fresh);
+        await setMasterKeyMaterial(b64);
+      }
+      const master = CryptoJS.enc.Base64.parse(b64);
+      // Derive sub-keys deterministically from the master key (HKDF-like).
+      cachedEncKey = CryptoJS.HmacSHA256('csvbt/enc/v1', master);
+      cachedMacKey = CryptoJS.HmacSHA256('csvbt/mac/v1', master);
+    })().catch(err => {
+      // Allow a later retry if initialization failed.
+      keyInitPromise = null;
+      throw err;
+    });
   }
-  const master = CryptoJS.enc.Base64.parse(b64);
-  // Derive sub-keys deterministically from the master key (HKDF-like).
-  cachedEncKey = CryptoJS.HmacSHA256('csvbt/enc/v1', master);
-  cachedMacKey = CryptoJS.HmacSHA256('csvbt/mac/v1', master);
+  await keyInitPromise;
 }
 
 /** Constant-time comparison of two hex strings to avoid timing leaks. */
@@ -153,6 +168,7 @@ export async function deterministicToken(input) {
 export function clearKeyCache() {
   cachedEncKey = null;
   cachedMacKey = null;
+  keyInitPromise = null;
 }
 
 /* ----------------------------- PIN hashing ----------------------------- */

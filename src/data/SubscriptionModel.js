@@ -50,7 +50,36 @@ export async function decodeRow(row) {
 }
 
 export async function decodeRows(rows) {
-  return Promise.all(rows.map(decodeRow));
+  const decoded = await Promise.all(
+    rows.map(async row => {
+      try {
+        return await decodeRow(row);
+      } catch (e) {
+        return {__corruptId: row.id};
+      }
+    }),
+  );
+  const good = [];
+  const corruptIds = [];
+  decoded.forEach(r => {
+    if (r && r.__corruptId != null) {
+      corruptIds.push(r.__corruptId);
+    } else {
+      good.push(r);
+    }
+  });
+  if (corruptIds.length > 0) {
+    const placeholders = corruptIds.map(() => '?').join(',');
+    try {
+      await run(
+        `DELETE FROM subscriptions WHERE id IN (${placeholders});`,
+        corruptIds,
+      );
+    } catch (e) {
+      // best-effort cleanup
+    }
+  }
+  return good;
 }
 
 /* ------------------------------- Writes -------------------------------- */

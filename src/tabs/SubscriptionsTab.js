@@ -2,8 +2,8 @@
  * SubscriptionsTab.js — subscriptions screen: a cost summary, a rescan action,
  * the status-tabbed list, and a manual "add subscription" flow.
  */
-import React, {useState} from 'react';
-import {View, Text, StyleSheet, Pressable} from 'react-native';
+import React, {useState, useCallback} from 'react';
+import {View, Text, StyleSheet, Pressable, Alert} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
@@ -40,6 +40,18 @@ export default function SubscriptionsTab({navigation}) {
   const handleImport = useCsvImport();
   const currency = settings.currency || 'USD';
 
+  const handleAdd = useCallback(
+    async data => {
+      try {
+        await addSubscription(data);
+        setAdding(false);
+      } catch (e) {
+        Alert.alert('Could not save', e.message || 'Please try again.');
+      }
+    },
+    [addSubscription],
+  );
+
   if (transactions.length === 0 && subscriptions.length === 0) {
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
@@ -59,10 +71,7 @@ export default function SubscriptionsTab({navigation}) {
         <SubscriptionFormModal
           visible={adding}
           onClose={() => setAdding(false)}
-          onSubmit={async data => {
-            await addSubscription(data);
-            setAdding(false);
-          }}
+          onSubmit={handleAdd}
         />
       </SafeAreaView>
     );

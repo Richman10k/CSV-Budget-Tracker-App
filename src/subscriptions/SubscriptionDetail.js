@@ -154,8 +154,12 @@ export default function SubscriptionDetail({route, navigation}) {
         initial={sub}
         onClose={() => setEditing(false)}
         onSubmit={async data => {
-          await updateSubscription(sub.id, data);
-          setEditing(false);
+          try {
+            await updateSubscription(sub.id, data);
+            setEditing(false);
+          } catch (e) {
+            Alert.alert('Could not save', e.message || 'Please try again.');
+          }
         }}
       />
     </SafeAreaView>
