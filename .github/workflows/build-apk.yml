@@ -51,28 +51,19 @@ jobs:
         run: |
           sdkmanager "platforms;android-35" "build-tools;35.0.0" "ndk;26.1.10909125" "cmake;3.22.1"
 
-      - name: Generate a release keystore
-        # Ephemeral keystore so the APK is self-signed + installable via adb.
-        # For Play Store distribution, replace this with your own keystore
-        # provided through repository secrets.
-        run: |
-          keytool -genkeypair -v -storetype PKCS12 \
-            -keystore android/app/release.keystore \
-            -alias csvbt -keyalg RSA -keysize 2048 -validity 10000 \
-            -storepass csvbudget -keypass csvbudget \
-            -dname "CN=CSV Budget Tracker, OU=App, O=CSVBudgetTracker, L=NA, ST=NA, C=US"
-
       - name: Make gradlew executable
         run: chmod +x android/gradlew
 
       - name: Build release APK
         working-directory: android
+        # No RELEASE_* properties are passed, so the release build is signed with
+        # the committed, STABLE debug.keystore (see app/build.gradle's release
+        # signingConfig fallback). A stable signature means every new build
+        # installs as an update over the previous one (no uninstall, data kept).
+        # For Play Store distribution, supply your own keystore via repository
+        # secrets and pass -PRELEASE_STORE_FILE/-PASSWORD/-KEY_ALIAS/-KEY_PASSWORD.
         run: |
-          ./gradlew assembleRelease --no-daemon --stacktrace \
-            -PRELEASE_STORE_FILE=release.keystore \
-            -PRELEASE_STORE_PASSWORD=csvbudget \
-            -PRELEASE_KEY_ALIAS=csvbt \
-            -PRELEASE_KEY_PASSWORD=csvbudget
+          ./gradlew assembleRelease --no-daemon --stacktrace
 
       - name: Report APK size
         run: ls -lh android/app/build/outputs/apk/release/*.apk
