@@ -79,6 +79,34 @@ export function subscriptionStatusColor(status) {
   return colors.expense; // active = red
 }
 
+/**
+ * Budget health for a spend vs. limit, used to color progress bars and labels
+ * consistently across the Budget and Home screens:
+ *   - no limit set        -> muted/neutral
+ *   - under ~85%          -> green (healthy)
+ *   - 85–100%             -> amber (getting close)
+ *   - over the limit      -> red (over budget)
+ * A $0 limit is a real "spend nothing" target: any spend is over.
+ */
+export function budgetStatus(spent = 0, limit = 0, hasLimit = limit > 0) {
+  if (!hasLimit) {
+    return {state: 'none', color: colors.textMuted, ratio: 0};
+  }
+  if (limit <= 0) {
+    return spent > 0
+      ? {state: 'over', color: colors.expense, ratio: 1}
+      : {state: 'ok', color: colors.income, ratio: 0};
+  }
+  const ratio = spent / limit;
+  if (ratio > 1) {
+    return {state: 'over', color: colors.expense, ratio};
+  }
+  if (ratio >= 0.85) {
+    return {state: 'near', color: colors.warning, ratio};
+  }
+  return {state: 'ok', color: colors.income, ratio};
+}
+
 /** Deterministically pick a stable color for a category name. */
 export function colorForCategory(name) {
   const key = String(name || 'Uncategorized');

@@ -8,7 +8,7 @@
  *     available.
  */
 import React, {useState, useEffect, useRef, useCallback} from 'react';
-import {View, Text, StyleSheet} from 'react-native';
+import {View, Text, StyleSheet, ScrollView, useWindowDimensions} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import Animated from 'react-native-reanimated';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -69,58 +69,89 @@ export default function LockScreen({onUnlock, biometricsEnabled = true}) {
     }
   }, [phase, runBiometric]);
 
+  const {width, height} = useWindowDimensions();
+  const landscape = width > height;
+
   if (phase === 'init') {
     return <LoadingScreen label="" />;
   }
 
+  const brand = (
+    <Animated.View
+      entering={fadeIn()}
+      style={[styles.brand, landscape && styles.brandLandscape]}>
+      <View style={[styles.logo, landscape && styles.logoLandscape]}>
+        <Icon name="shield-lock" size={landscape ? 30 : 36} color={colors.accent} />
+      </View>
+      <Text style={styles.appName}>CSV Budget Tracker</Text>
+      <Text style={styles.tagline}>Private. Offline. Encrypted.</Text>
+    </Animated.View>
+  );
+
+  const body = (
+    <View style={[styles.body, landscape && styles.bodyLandscape]}>
+      {phase === 'setPin' ? (
+        <PINLock
+          mode="set"
+          subtitle="Create a 4-digit PIN to secure your data."
+          onSuccess={onUnlock}
+        />
+      ) : null}
+
+      {phase === 'pin' ? <PINLock mode="verify" onSuccess={onUnlock} /> : null}
+
+      {phase === 'biometric' ? (
+        <View style={styles.bioWrap}>
+          <Icon name="fingerprint" size={72} color={colors.accent} />
+          <Text style={styles.bioText}>Unlock with {capLabel}</Text>
+          <Button
+            label={`Unlock with ${capLabel}`}
+            icon="fingerprint"
+            onPress={runBiometric}
+            style={styles.bioBtn}
+          />
+          <Button
+            label="Use PIN instead"
+            variant="ghost"
+            onPress={() => setPhase('pin')}
+          />
+        </View>
+      ) : null}
+    </View>
+  );
+
   return (
     <SafeAreaView style={styles.safe}>
-      <Animated.View entering={fadeIn()} style={styles.brand}>
-        <View style={styles.logo}>
-          <Icon name="shield-lock" size={36} color={colors.accent} />
-        </View>
-        <Text style={styles.appName}>CSV Budget Tracker</Text>
-        <Text style={styles.tagline}>Private. Offline. Encrypted.</Text>
-      </Animated.View>
-
-      <View style={styles.body}>
-        {phase === 'setPin' ? (
-          <PINLock
-            mode="set"
-            subtitle="Create a 4-digit PIN to secure your data."
-            onSuccess={onUnlock}
-          />
-        ) : null}
-
-        {phase === 'pin' ? (
-          <PINLock mode="verify" onSuccess={onUnlock} />
-        ) : null}
-
-        {phase === 'biometric' ? (
-          <View style={styles.bioWrap}>
-            <Icon name="fingerprint" size={72} color={colors.accent} />
-            <Text style={styles.bioText}>Unlock with {capLabel}</Text>
-            <Button
-              label={`Unlock with ${capLabel}`}
-              icon="fingerprint"
-              onPress={runBiometric}
-              style={styles.bioBtn}
-            />
-            <Button
-              label="Use PIN instead"
-              variant="ghost"
-              onPress={() => setPhase('pin')}
-            />
-          </View>
-        ) : null}
-      </View>
+      <ScrollView
+        contentContainerStyle={[
+          styles.scroll,
+          landscape && styles.scrollLandscape,
+        ]}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}>
+        {brand}
+        {body}
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safe: {flex: 1, backgroundColor: colors.background},
+  // Portrait: stacked column that fills the screen and centers the keypad.
+  scroll: {
+    flexGrow: 1,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.lg,
+  },
+  // Landscape: brand on the left, keypad/biometric on the right, both centered.
+  scrollLandscape: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   brand: {alignItems: 'center', marginTop: spacing.xxl},
+  brandLandscape: {flex: 1, marginTop: 0, paddingHorizontal: spacing.lg},
   logo: {
     width: 76,
     height: 76,
@@ -129,9 +160,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  logoLandscape: {width: 60, height: 60, borderRadius: 30},
   appName: {...typography.title, marginTop: spacing.md},
   tagline: {...typography.caption, marginTop: 4},
-  body: {flex: 1, alignItems: 'center', justifyContent: 'center', width: '100%'},
+  body: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    paddingTop: spacing.xl,
+  },
+  bodyLandscape: {flex: 1, width: undefined, paddingTop: 0},
   bioWrap: {alignItems: 'center', width: '100%', paddingHorizontal: spacing.xl},
   bioText: {...typography.label, marginVertical: spacing.lg},
   bioBtn: {marginBottom: spacing.md, alignSelf: 'stretch'},

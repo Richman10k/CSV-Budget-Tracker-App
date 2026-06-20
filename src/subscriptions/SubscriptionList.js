@@ -3,7 +3,7 @@
  * Cancelled / Trial) with a card per subscription showing cost, next due date,
  * and any risk flags.
  */
-import React, {useState, useMemo} from 'react';
+import React, {useMemo} from 'react';
 import {View, Text, FlatList, StyleSheet} from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
@@ -84,8 +84,14 @@ function SubscriptionCard({sub, currency, onPress}) {
   );
 }
 
-export default function SubscriptionList({subscriptions, currency = 'USD', onSelect}) {
-  const [status, setStatus] = useState('active');
+export default function SubscriptionList({
+  subscriptions,
+  currency = 'USD',
+  onSelect,
+  status = 'active',
+  onStatusChange,
+}) {
+  const setStatus = onStatusChange || (() => {});
 
   const counts = useMemo(() => {
     const c = {active: 0, cancelled: 0, trial: 0};

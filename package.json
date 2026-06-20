@@ -1,6 +1,6 @@
 {
   "name": "csvbudgettracker",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "description": "CSV Budget Tracker — offline, encrypted React Native Android budgeting app that imports bank CSV exports, detects recurring subscriptions, and tracks spending with smooth up-to-120fps animations.",
   "license": "MIT",
@@ -14,7 +14,8 @@
     "start": "react-native start",
     "lint": "eslint . --ext .js,.jsx",
     "test": "jest",
-    "bundle:android": "react-native bundle --platform android --dev false --entry-file index.js --bundle-output /tmp/index.android.bundle --assets-dest /tmp"
+    "genversion": "node scripts/gen-build-info.js",
+    "bundle:android": "node scripts/gen-build-info.js && react-native bundle --platform android --dev false --entry-file index.js --bundle-output /tmp/index.android.bundle --assets-dest /tmp"
   },
   "dependencies": {
     "@d11/react-native-fast-image": "8.13.0",

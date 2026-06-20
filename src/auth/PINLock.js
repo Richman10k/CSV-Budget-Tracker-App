@@ -10,7 +10,7 @@
  * (see Crypto.hashPin / verifyPin + SecureStorage).
  */
 import React, {useState, useCallback, useEffect} from 'react';
-import {View, Text, Pressable, StyleSheet} from 'react-native';
+import {View, Text, Pressable, StyleSheet, useWindowDimensions} from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -34,6 +34,8 @@ export default function PINLock({mode = 'verify', onSuccess, title, subtitle}) {
   const [attempts, setAttempts] = useState(0);
   const [lockedUntil, setLockedUntil] = useState(0);
   const shake = useSharedValue(0);
+  const {width, height} = useWindowDimensions();
+  const compact = width > height; // landscape — shrink the keypad to fit
 
   const isConfirmStage = mode === 'set' && firstPin !== null;
   const heading =
@@ -161,7 +163,7 @@ export default function PINLock({mode = 'verify', onSuccess, title, subtitle}) {
       <View style={styles.keypad}>
         {KEYS.map((k, idx) => {
           if (k === '') {
-            return <View key={idx} style={styles.key} />;
+            return <View key={idx} style={[styles.key, compact && styles.keyCompact]} />;
           }
           return (
             <Pressable
@@ -169,7 +171,7 @@ export default function PINLock({mode = 'verify', onSuccess, title, subtitle}) {
               onPress={() => press(k)}
               disabled={locked}
               android_ripple={{color: colors.ripple, borderless: true, radius: 40}}
-              style={styles.key}>
+              style={[styles.key, compact && styles.keyCompact]}>
               {k === 'del' ? (
                 <Icon name="backspace-outline" size={26} color={colors.text} />
               ) : (
@@ -211,5 +213,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  keyCompact: {height: 54},
   keyText: {fontSize: 30, fontWeight: '600', color: colors.text},
 });

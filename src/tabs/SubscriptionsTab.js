@@ -38,6 +38,9 @@ export default function SubscriptionsTab({navigation}) {
     busy,
   } = useAppData();
   const [adding, setAdding] = useState(false);
+  // Which status tab is showing — a new subscription defaults to this status so
+  // adding from the "Trial" or "Cancelled" tab pre-selects that status.
+  const [statusTab, setStatusTab] = useState('active');
   const handleImport = useCsvImport();
   const currency = settings.currency || 'USD';
 
@@ -71,6 +74,7 @@ export default function SubscriptionsTab({navigation}) {
         />
         <SubscriptionFormModal
           visible={adding}
+          initial={{status: statusTab}}
           onClose={() => setAdding(false)}
           onSubmit={handleAdd}
         />
@@ -119,11 +123,14 @@ export default function SubscriptionsTab({navigation}) {
       <SubscriptionList
         subscriptions={subscriptions}
         currency={currency}
+        status={statusTab}
+        onStatusChange={setStatusTab}
         onSelect={sub => navigation.navigate('SubscriptionDetail', {subId: sub.id})}
       />
 
       <SubscriptionFormModal
         visible={adding}
+        initial={{status: statusTab}}
         onClose={() => setAdding(false)}
         onSubmit={async data => {
           await addSubscription(data);

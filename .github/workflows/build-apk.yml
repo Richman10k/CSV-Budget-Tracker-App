@@ -22,6 +22,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # Full history so the build number (git commit count) is accurate.
+          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -31,6 +34,11 @@ jobs:
 
       - name: Install JS dependencies
         run: npm ci
+
+      - name: Stamp build version
+        # Regenerates src/buildInfo.js so the in-app Settings version reflects
+        # this commit (version + git build number + short SHA).
+        run: npm run genversion
 
       - name: Lint
         run: npm run lint

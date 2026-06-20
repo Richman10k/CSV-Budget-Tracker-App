@@ -76,6 +76,30 @@ def enableProguardInReleaseBuilds = true
  */
 def jscFlavor = 'org.webkit:android-jsc:+'
 
+// Keep the APK version in sync with the JS app: versionName comes from the repo
+// package.json, versionCode auto-increments with the git commit count so every
+// push produces an installable update. Both fall back safely if unavailable.
+def computeVersionName = {
+    try {
+        def pkg = new groovy.json.JsonSlurper().parseText(file("../../package.json").text)
+        return pkg.version
+    } catch (ignored) {
+        return "1.0"
+    }
+}
+def computeVersionCode = {
+    try {
+        def stdout = new ByteArrayOutputStream()
+        exec {
+            commandLine "git", "rev-list", "--count", "HEAD"
+            standardOutput = stdout
+        }
+        return stdout.toString().trim().toInteger()
+    } catch (ignored) {
+        return 1
+    }
+}
+
 android {
     ndkVersion rootProject.ext.ndkVersion
     buildToolsVersion rootProject.ext.buildToolsVersion
@@ -86,8 +110,8 @@ android {
         applicationId "com.csvbudgettracker"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode computeVersionCode()
+        versionName computeVersionName()
     }
     signingConfigs {
         debug {

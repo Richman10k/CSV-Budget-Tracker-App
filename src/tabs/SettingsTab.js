@@ -24,6 +24,7 @@ import Card from '../components/Card';
 import PressableScale from '../components/PressableScale';
 import PINLock from '../auth/PINLock';
 import {useCsvImport} from './HomeTab';
+import buildInfo from '../buildInfo';
 import {colors, spacing, typography, radius} from '../theme/theme';
 
 // 0 = Off (no inactivity auto-lock). The app still locks on close/reopen.
@@ -206,6 +207,11 @@ export default function SettingsTab() {
             danger
           />
         </Card>
+
+        <Text style={styles.version}>
+          CSV Budget Tracker · v{buildInfo.version} (build {buildInfo.build} ·{' '}
+          {buildInfo.commit})
+        </Text>
 
         <View style={styles.bottomPad} />
       </ScrollView>

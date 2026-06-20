@@ -12,11 +12,11 @@ import Animated, {
 } from 'react-native-reanimated';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import Card from '../components/Card';
-import {colors, spacing, typography, radius} from '../theme/theme';
+import {colors, spacing, typography, radius, budgetStatus} from '../theme/theme';
 import {getDurations} from '../animations/FrameRateManager';
 import {formatCurrency} from '../utils/formatCurrency';
 
-function ProgressBar({fraction, danger}) {
+function ProgressBar({fraction, color}) {
   const [trackWidth, setTrackWidth] = useState(0);
   const p = useSharedValue(0);
   useEffect(() => {
@@ -29,13 +29,7 @@ function ProgressBar({fraction, danger}) {
     <View
       style={styles.track}
       onLayout={e => setTrackWidth(e.nativeEvent.layout.width)}>
-      <Animated.View
-        style={[
-          styles.fill,
-          {backgroundColor: danger ? colors.expense : colors.accent},
-          style,
-        ]}
-      />
+      <Animated.View style={[styles.fill, {backgroundColor: color}, style]} />
     </View>
   );
 }
@@ -61,7 +55,8 @@ export default function SpendingOverview({
   const hasBudget = budgetLimit > 0;
   const fraction = hasBudget ? spending / budgetLimit : 0;
   const remaining = budgetLimit - spending;
-  const over = hasBudget && remaining < 0;
+  const status = budgetStatus(spending, budgetLimit, hasBudget);
+  const over = status.state === 'over';
 
   return (
     <Card elevated>
@@ -70,12 +65,12 @@ export default function SpendingOverview({
 
       {hasBudget ? (
         <>
-          <ProgressBar fraction={fraction} danger={over} />
+          <ProgressBar fraction={fraction} color={status.color} />
           <View style={styles.budgetRow}>
             <Text style={styles.budgetText}>
               of {formatCurrency(budgetLimit, currency)} budget
             </Text>
-            <Text style={[styles.remaining, over && {color: colors.expense}]}>
+            <Text style={[styles.remaining, {color: status.color}]}>
               {over
                 ? `${formatCurrency(Math.abs(remaining), currency)} over`
                 : `${formatCurrency(remaining, currency)} left`}

@@ -2,7 +2,7 @@
  * SubscriptionFormModal.js — bottom-sheet form used for both adding a new
  * subscription and editing an existing one.
  */
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useRef} from 'react';
 import {
   Modal,
   View,
@@ -64,8 +64,12 @@ export default function SubscriptionFormModal({
   const [category, setCategory] = useState('Subscriptions');
   const [notes, setNotes] = useState('');
 
+  // Seed the form only when the sheet opens (false -> true). Re-running on every
+  // `initial` change would wipe the fields as the user types, because callers
+  // may pass a fresh `initial` object (e.g. {status}) on each render.
+  const wasVisible = useRef(false);
   useEffect(() => {
-    if (visible) {
+    if (visible && !wasVisible.current) {
       setName(initial?.name || '');
       setAmount(initial?.amount != null ? String(initial.amount) : '');
       setInterval(initial?.interval || 'monthly');
@@ -73,9 +77,14 @@ export default function SubscriptionFormModal({
       setCategory(initial?.category || 'Subscriptions');
       setNotes(initial?.notes || '');
     }
+    wasVisible.current = visible;
   }, [visible, initial]);
 
-  const canSave = name.trim().length > 0 && parseFloat(amount) > 0;
+  // A subscription can be $0 (e.g. a free trial), so allow zero — only require
+  // a name and a valid, non-negative number.
+  const parsedAmount = parseFloat(amount);
+  const canSave =
+    name.trim().length > 0 && Number.isFinite(parsedAmount) && parsedAmount >= 0;
 
   const submit = () => {
     if (!canSave) {
@@ -83,7 +92,7 @@ export default function SubscriptionFormModal({
     }
     onSubmit({
       name: name.trim(),
-      amount: parseFloat(amount),
+      amount: parsedAmount,
       interval,
       status,
       category: category.trim() || 'Subscriptions',
