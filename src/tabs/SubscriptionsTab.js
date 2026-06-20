@@ -92,11 +92,12 @@ export default function SubscriptionsTab({navigation}) {
           <Stat
             label="Monthly"
             value={formatCurrency(subscriptionSummary.monthlyTotal, currency)}
-            color={colors.accent}
+            color={colors.expense}
           />
           <Stat
             label="Yearly"
             value={formatCurrency(subscriptionSummary.yearlyTotal, currency)}
+            color={colors.expense}
           />
           <Stat label="Due soon" value={String(subscriptionSummary.dueSoon)} />
         </View>

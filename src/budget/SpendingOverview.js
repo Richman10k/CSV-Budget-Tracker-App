@@ -13,14 +13,14 @@ import Animated, {
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import Card from '../components/Card';
 import {colors, spacing, typography, radius} from '../theme/theme';
-import {getDurations, EASING} from '../animations/FrameRateManager';
+import {getDurations} from '../animations/FrameRateManager';
 import {formatCurrency} from '../utils/formatCurrency';
 
 function ProgressBar({fraction, danger}) {
   const [trackWidth, setTrackWidth] = useState(0);
   const p = useSharedValue(0);
   useEffect(() => {
-    p.value = withTiming(1, {duration: getDurations().slow, easing: EASING});
+    p.value = withTiming(1, {duration: getDurations().slow});
   }, [p]);
   const style = useAnimatedStyle(() => ({
     width: trackWidth * Math.min(fraction, 1) * p.value,

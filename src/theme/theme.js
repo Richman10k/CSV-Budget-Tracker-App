@@ -65,6 +65,20 @@ export const categoryPalette = [
   '#78909C', // blue gray
 ];
 
+/**
+ * Color for a subscription by status: active charges are red (money going out),
+ * cancelled is green (money saved), trial is amber/yellow.
+ */
+export function subscriptionStatusColor(status) {
+  if (status === 'cancelled') {
+    return colors.income; // green
+  }
+  if (status === 'trial') {
+    return colors.warning; // yellow
+  }
+  return colors.expense; // active = red
+}
+
 /** Deterministically pick a stable color for a category name. */
 export function colorForCategory(name) {
   const key = String(name || 'Uncategorized');

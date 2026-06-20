@@ -19,7 +19,7 @@ import Animated, {
   withDelay,
 } from 'react-native-reanimated';
 import {colors, spacing, typography, radius, colorForCategory} from '../theme/theme';
-import {getDurations, EASING} from '../animations/FrameRateManager';
+import {getDurations} from '../animations/FrameRateManager';
 import {formatCurrency} from '../utils/formatCurrency';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
@@ -56,7 +56,7 @@ function DonutSegment({progress, fraction, offset, color, size, strokeWidth}) {
 export function CategoryDonut({data = [], size = 180, strokeWidth = 22, centerLabel, centerValue, currency = 'USD'}) {
   const progress = useSharedValue(0);
   useEffect(() => {
-    progress.value = withTiming(1, {duration: getDurations().slow, easing: EASING});
+    progress.value = withTiming(1, {duration: getDurations().slow});
   }, [progress]);
 
   const total = data.reduce((sum, d) => sum + Math.abs(d.amount), 0);
@@ -117,7 +117,7 @@ function Bar({fraction, color, index}) {
   useEffect(() => {
     p.value = withDelay(
       Math.min(index, 8) * 40,
-      withTiming(1, {duration: getDurations().base, easing: EASING}),
+      withTiming(1, {duration: getDurations().base}),
     );
   }, [p, index]);
   const style = useAnimatedStyle(() => ({

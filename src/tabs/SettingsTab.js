@@ -28,7 +28,6 @@ import {colors, spacing, typography, radius} from '../theme/theme';
 
 // 0 = Off (no inactivity auto-lock). The app still locks on close/reopen.
 const AUTO_LOCK_OPTIONS = [15, 30, 60, 120, 0];
-const APP_VERSION = '1.0.0';
 
 function autoLockLabel(secs) {
   return !secs || secs <= 0 ? 'Off' : `${secs}s`;
@@ -208,17 +207,6 @@ export default function SettingsTab() {
           />
         </Card>
 
-        <SectionLabel>About</SectionLabel>
-        <Card>
-          <View style={styles.aboutRow}>
-            <Icon name="shield-check" size={20} color={colors.accent} />
-            <Text style={styles.aboutText}>
-              100% offline. Your data is AES-256 encrypted on this device and
-              never leaves it — no cloud, no accounts, no tracking.
-            </Text>
-          </View>
-          <Text style={styles.version}>CSV Budget Tracker v{APP_VERSION}</Text>
-        </Card>
         <View style={styles.bottomPad} />
       </ScrollView>
 

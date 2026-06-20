@@ -10,7 +10,13 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import Card from '../components/Card';
 import EmptyState from '../components/EmptyState';
 import PressableScale from '../components/PressableScale';
-import {colors, spacing, typography, radius} from '../theme/theme';
+import {
+  colors,
+  spacing,
+  typography,
+  radius,
+  subscriptionStatusColor,
+} from '../theme/theme';
 import {formatCurrency} from '../utils/formatCurrency';
 import {formatShortDate} from '../utils/formatDate';
 import {monthlyEquivalent} from '../utils/detectRecurring';
@@ -37,11 +43,12 @@ function StatusTab({label, count, active, onPress}) {
 
 function SubscriptionCard({sub, currency, onPress}) {
   const monthly = monthlyEquivalent(sub.amount, sub.interval);
+  const tint = subscriptionStatusColor(sub.status);
   return (
     <Card onPress={onPress} style={styles.card}>
       <View style={styles.cardRow}>
-          <View style={styles.logo}>
-            <Text style={styles.logoText}>
+          <View style={[styles.logo, {backgroundColor: `${tint}22`}]}>
+            <Text style={[styles.logoText, {color: tint}]}>
               {(sub.name || '?').charAt(0).toUpperCase()}
             </Text>
           </View>
@@ -49,7 +56,7 @@ function SubscriptionCard({sub, currency, onPress}) {
             <Text style={styles.name} numberOfLines={1}>
               {sub.name}
             </Text>
-            <Text style={styles.meta}>
+            <Text style={[styles.meta, {color: tint}]}>
               {formatCurrency(monthly, currency)}/mo · {sub.interval}
             </Text>
             {sub.nextDue ? (
@@ -57,7 +64,9 @@ function SubscriptionCard({sub, currency, onPress}) {
             ) : null}
           </View>
           <View style={styles.amountWrap}>
-            <Text style={styles.amount}>{formatCurrency(sub.amount, currency)}</Text>
+            <Text style={[styles.amount, {color: tint}]}>
+              {formatCurrency(sub.amount, currency)}
+            </Text>
             <Icon name="chevron-right" size={20} color={colors.textMuted} />
           </View>
         </View>
