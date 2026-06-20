@@ -85,6 +85,9 @@ export function AppDataProvider({children}) {
   const unlockedRef = useRef(false);
   const settingsRef = useRef(settings);
   const activityTimer = useRef(null);
+  // When true, the next "app went to background" is ignored for locking. Used
+  // around the system file picker so importing a CSV doesn't lock the app.
+  const suppressLockRef = useRef(false);
   useEffect(() => {
     unlockedRef.current = unlocked;
   }, [unlocked]);
@@ -133,8 +136,13 @@ export function AppDataProvider({children}) {
     }
     if (activityTimer.current) {
       clearTimeout(activityTimer.current);
+      activityTimer.current = null;
     }
-    const secs = settingsRef.current.autoLockSeconds || 30;
+    // autoLockSeconds === 0 means "Off" — no inactivity auto-lock.
+    const secs = settingsRef.current.autoLockSeconds;
+    if (!secs || secs <= 0) {
+      return;
+    }
     activityTimer.current = setTimeout(() => lock(), secs * 1000);
   }, [lock]);
 
@@ -146,14 +154,20 @@ export function AppDataProvider({children}) {
     resetActivity();
   }, [refreshAll, resetActivity]);
 
-  // Lock when the app goes to the background.
+  // Lock when the app goes to the background (so closing + reopening always
+  // requires the PIN/biometric), EXCEPT while the in-app file picker is open.
   useEffect(() => {
     const sub = AppState.addEventListener('change', next => {
-      if (
-        next !== 'active' &&
-        unlockedRef.current &&
-        settingsRef.current.lockOnBackground
-      ) {
+      if (next === 'active') {
+        // Returned to the foreground — clear any one-shot lock suppression.
+        suppressLockRef.current = false;
+        return;
+      }
+      if (suppressLockRef.current) {
+        // Backgrounded by our own file picker; don't lock.
+        return;
+      }
+      if (unlockedRef.current && settingsRef.current.lockOnBackground) {
         lock();
       }
     });
@@ -163,6 +177,9 @@ export function AppDataProvider({children}) {
   /* ----------------------------- Actions ----------------------------- */
 
   const importCsv = useCallback(async () => {
+    // Opening the system file picker backgrounds our app; suppress the
+    // lock-on-background so the user stays on their current screen.
+    suppressLockRef.current = true;
     setBusy('Importing…');
     try {
       const res = await pickCsvFile();
@@ -184,8 +201,13 @@ export function AppDataProvider({children}) {
       };
     } finally {
       setBusy(null);
+      // Safety net in case the foreground event was missed.
+      setTimeout(() => {
+        suppressLockRef.current = false;
+      }, 1500);
+      resetActivity();
     }
-  }, [refreshAll]);
+  }, [refreshAll, resetActivity]);
 
   const addTransaction = useCallback(
     async tx => {

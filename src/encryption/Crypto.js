@@ -22,7 +22,11 @@ import {getMasterKeyMaterial, setMasterKeyMaterial} from './SecureStorage';
 
 const KEY_BYTES = 32; // 256-bit
 const IV_BYTES = 16; // AES block size
-const PBKDF2_ITERATIONS = 100000;
+// PBKDF2 stretches the PIN hash. crypto-js runs this on the JS thread, so a very
+// high count noticeably delays unlock. A 4-digit PIN only has 10k combinations,
+// so the real protections are the Keystore-backed storage + the 5-try lockout;
+// 12k iterations keeps a sensible cost while making unlock feel instant.
+const PBKDF2_ITERATIONS = 12000;
 
 // Built at runtime from \u escapes so the source file stays pure ASCII
 // (control characters: U+0000..U+001F and U+007F).

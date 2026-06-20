@@ -31,7 +31,16 @@ function SubscriptionsStack() {
 export default function BudgetDashboard() {
   return (
     <Tab.Navigator
-      screenOptions={{headerShown: false, lazy: true}}
+      screenOptions={{
+        headerShown: false,
+        lazy: true,
+        // Quick cross-tab transition (slide + fade) instead of an instant cut.
+        animation: 'shift',
+        transitionSpec: {
+          animation: 'timing',
+          config: {duration: 220},
+        },
+      }}
       tabBar={props => <TabBar {...props} />}>
       <Tab.Screen name="Home" component={HomeTab} />
       <Tab.Screen name="Subscriptions" component={SubscriptionsStack} />

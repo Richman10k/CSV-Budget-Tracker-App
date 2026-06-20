@@ -25,8 +25,13 @@ import PINLock from '../auth/PINLock';
 import {useCsvImport} from './HomeTab';
 import {colors, spacing, typography, radius} from '../theme/theme';
 
-const AUTO_LOCK_OPTIONS = [15, 30, 60, 120];
+// 0 = Off (no inactivity auto-lock). The app still locks on close/reopen.
+const AUTO_LOCK_OPTIONS = [15, 30, 60, 120, 0];
 const APP_VERSION = '1.0.0';
+
+function autoLockLabel(secs) {
+  return !secs || secs <= 0 ? 'Off' : `${secs}s`;
+}
 
 function SettingRow({icon, label, subtitle, right, onPress, danger}) {
   return (
@@ -129,9 +134,13 @@ export default function SettingsTab() {
           <SettingRow
             icon="timer-lock"
             label="Auto-lock"
-            subtitle="Lock after inactivity"
+            subtitle="Lock after inactivity (tap to change, Off disables)"
             onPress={cycleAutoLock}
-            right={<Text style={styles.value}>{settings.autoLockSeconds}s</Text>}
+            right={
+              <Text style={styles.value}>
+                {autoLockLabel(settings.autoLockSeconds)}
+              </Text>
+            }
           />
           <View style={styles.divider} />
           <SettingRow
