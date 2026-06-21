@@ -28,9 +28,17 @@ import {pickCsvFile, saveCsvFile} from '../csv/FileImporter';
 import {parseCSV} from '../csv/CSVParser';
 import {runDetection, summarizeSubscriptions} from '../subscriptions/SubscriptionDetector';
 import {runHealthCheck, fixHealth} from '../automations/healthCheck';
+import {
+  pickReceipt,
+  saveEncrypted,
+  resolveForView,
+  deleteReceipt,
+  cleanupOrphans,
+} from '../automations/receiptStore';
 import {generateInsights} from '../insights/generateInsights';
 import {buildReportHtml} from '../insights/monthlyReport';
-import {formatCurrency} from '../utils/formatCurrency';
+import {updateWidget} from '../widgets/widget';
+import {formatCurrency, formatSigned} from '../utils/formatCurrency';
 import {formatISODate, formatMonthYear, formatShortDate} from '../utils/formatDate';
 
 const AppDataContext = createContext(null);
@@ -143,6 +151,8 @@ export function AppDataProvider({children}) {
     setSubscriptions([]);
     setBudgets({});
     clearKeyCache();
+    // Hide financial data from the home-screen widget while locked.
+    updateWidget({net: '•••', netColor: '#A2A8B4', topCategory: 'Locked', progress: 0});
   }, []);
 
   /** Restart the inactivity countdown (called on user interaction). */
@@ -253,6 +263,44 @@ export function AppDataProvider({children}) {
     [refreshAll],
   );
 
+  /* ----------------------------- Receipts ---------------------------- */
+
+  // Attach an encrypted photo/PDF receipt to a transaction. Opening the picker
+  // backgrounds the app, so suppress lock-on-background like CSV import does.
+  const attachReceipt = useCallback(
+    async txId => {
+      suppressLockRef.current = true;
+      try {
+        const picked = await pickReceipt();
+        if (picked.cancelled) {
+          return {cancelled: true};
+        }
+        const meta = await saveEncrypted(picked.path, picked.ext);
+        await TransactionModel.setReceipt(txId, meta);
+        await refreshAll();
+        return {cancelled: false};
+      } finally {
+        setTimeout(() => {
+          suppressLockRef.current = false;
+        }, 1500);
+        resetActivity();
+      }
+    },
+    [refreshAll, resetActivity],
+  );
+
+  const removeReceipt = useCallback(
+    async (txId, meta) => {
+      await deleteReceipt(meta);
+      await TransactionModel.setReceipt(txId, null);
+      await refreshAll();
+    },
+    [refreshAll],
+  );
+
+  // Decrypt a receipt to a temp file and return a viewable file:// URI.
+  const resolveReceipt = useCallback(meta => resolveForView(meta), []);
+
   const addSubscription = useCallback(
     async sub => {
       await SubscriptionModel.insert({...sub, autoDetected: false});
@@ -357,13 +405,18 @@ export function AppDataProvider({children}) {
   const repairData = useCallback(async () => {
     setBusy('Optimizing…');
     try {
+      // Clean up encrypted receipt blobs no longer referenced by a transaction.
+      const referenced = new Set(
+        transactions.filter(t => t.receipt && t.receipt.id).map(t => t.receipt.id),
+      );
+      await cleanupOrphans(referenced);
       const report = await fixHealth();
       setHealth(report);
       return report;
     } finally {
       setBusy(null);
     }
-  }, []);
+  }, [transactions]);
 
   const updateSettings = useCallback(async patch => {
     const merged = await saveSettings(patch);
@@ -465,6 +518,48 @@ export function AppDataProvider({children}) {
     return saveCsvFile(fileName, html);
   }, [selectedMonth, transactions, subscriptions, budgets, monthData]);
 
+  // Keep the home-screen widget in sync with today's net + this month's top
+  // category and budget usage whenever the (unlocked) dataset changes.
+  useEffect(() => {
+    if (!unlocked) {
+      return;
+    }
+    const currency = settings.currency || 'USD';
+    const today = new Date();
+    const startToday = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate(),
+    ).getTime();
+    let net = 0;
+    let monthSpend = 0;
+    const catTotals = {};
+    transactions.forEach(t => {
+      if (t.date >= startToday) {
+        net += t.type === 'income' ? t.amount : -t.amount;
+      }
+      const d = new Date(t.date);
+      if (
+        d.getFullYear() === today.getFullYear() &&
+        d.getMonth() === today.getMonth() &&
+        t.type === 'expense'
+      ) {
+        monthSpend += t.amount;
+        catTotals[t.category] = (catTotals[t.category] || 0) + t.amount;
+      }
+    });
+    const top = Object.keys(catTotals).sort((a, b) => catTotals[b] - catTotals[a])[0];
+    const totalBudget = budgets.TOTAL || 0;
+    const progress =
+      totalBudget > 0 ? Math.min(Math.round((monthSpend / totalBudget) * 100), 100) : 0;
+    updateWidget({
+      net: formatSigned(Math.abs(net), net >= 0 ? 'income' : 'expense', currency),
+      netColor: net >= 0 ? '#00C853' : '#FF5252',
+      topCategory: top ? `Top: ${top}` : 'No spending yet',
+      progress,
+    });
+  }, [unlocked, transactions, budgets, settings.currency]);
+
   const value = {
     // state
     ready,
@@ -490,6 +585,9 @@ export function AppDataProvider({children}) {
     addTransaction,
     updateTransaction,
     deleteTransaction,
+    attachReceipt,
+    removeReceipt,
+    resolveReceipt,
     addSubscription,
     updateSubscription,
     setSubscriptionStatus,

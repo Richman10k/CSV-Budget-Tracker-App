@@ -19,7 +19,7 @@ SQLite.DEBUG(false);
 
 const DB_NAME = 'csvbudget.db';
 // Bump this and add a MIGRATIONS entry whenever the schema changes.
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
 
 let dbInstance = null;
 let openPromise = null;
@@ -119,6 +119,10 @@ const MIGRATIONS = {
     await db.executeSql(
       'CREATE INDEX IF NOT EXISTS idx_rp_merchant ON recurring_patterns(merchant_key);',
     );
+  },
+  // v3 — Photo receipts: encrypted reference ({id, ext}) per transaction.
+  3: async db => {
+    await addColumn(db, 'transactions', 'enc_receipt_uri', 'TEXT');
   },
 };
 

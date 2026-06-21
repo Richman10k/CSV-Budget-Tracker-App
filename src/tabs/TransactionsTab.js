@@ -13,6 +13,7 @@ import SearchBar from '../components/SearchBar';
 import EmptyState from '../components/EmptyState';
 import PressableScale from '../components/PressableScale';
 import TransactionRow, {ROW_HEIGHT} from '../components/TransactionRow';
+import TransactionDetailModal from '../transactions/TransactionDetailModal';
 import {useCsvImport} from './HomeTab';
 import {colors, spacing, typography, radius} from '../theme/theme';
 
@@ -41,6 +42,7 @@ export default function TransactionsTab() {
   const {transactions, settings, resetActivity} = useAppData();
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('all');
+  const [selectedId, setSelectedId] = useState(null);
   const handleImport = useCsvImport();
   const currency = settings.currency || 'USD';
 
@@ -62,7 +64,13 @@ export default function TransactionsTab() {
   }, [transactions, query, filter]);
 
   const renderItem = useCallback(
-    ({item}) => <TransactionRow transaction={item} currency={currency} />,
+    ({item}) => (
+      <TransactionRow
+        transaction={item}
+        currency={currency}
+        onPress={t => setSelectedId(t.id)}
+      />
+    ),
     [currency],
   );
 
@@ -126,6 +134,12 @@ export default function TransactionsTab() {
             <Text style={styles.noResultsText}>No matching transactions.</Text>
           </View>
         }
+      />
+
+      <TransactionDetailModal
+        transactionId={selectedId}
+        visible={selectedId != null}
+        onClose={() => setSelectedId(null)}
       />
     </SafeAreaView>
   );

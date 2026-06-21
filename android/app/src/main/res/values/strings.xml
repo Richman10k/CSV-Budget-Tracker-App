@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">CSV Budget Tracker</string>
+    <string name="widget_name">Budget</string>
+    <string name="widget_description">Today\'s net, top category and budget usage.</string>
 </resources>

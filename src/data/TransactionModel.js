@@ -61,6 +61,15 @@ export async function decodeRow(row) {
     row.enc_balance ? decrypt(row.enc_balance) : Promise.resolve(null),
     row.enc_merchant ? decrypt(row.enc_merchant) : Promise.resolve(''),
   ]);
+  let receipt = null;
+  if (row.enc_receipt_uri) {
+    try {
+      const json = await decrypt(row.enc_receipt_uri);
+      receipt = json ? JSON.parse(json) : null;
+    } catch (e) {
+      receipt = null;
+    }
+  }
   return {
     id: row.id,
     date: row.date,
@@ -70,6 +79,7 @@ export async function decodeRow(row) {
     amount: parseFloat(amountStr) || 0,
     balance: balanceStr == null ? null : parseFloat(balanceStr),
     merchant,
+    receipt,
     source: row.source,
     createdAt: row.created_at,
   };
@@ -169,6 +179,12 @@ export async function update(id, patch) {
   await run(`UPDATE transactions SET ${sets.join(', ')} WHERE id = ?;`, params);
 }
 
+/** Attach/detach an encrypted receipt reference ({id, ext} or null). */
+export async function setReceipt(id, receipt) {
+  const enc = receipt ? await encrypt(JSON.stringify(receipt)) : null;
+  await run('UPDATE transactions SET enc_receipt_uri = ? WHERE id = ?;', [enc, id]);
+}
+
 /** Delete a single transaction by id. */
 export async function remove(id) {
   await run('DELETE FROM transactions WHERE id = ?;', [id]);
@@ -238,6 +254,7 @@ export default {
   insert,
   insertMany,
   update,
+  setReceipt,
   remove,
   count,
   getRecent,

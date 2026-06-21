@@ -29,5 +29,18 @@
             <category android:name="android.intent.category.LAUNCHER" />
         </intent-filter>
       </activity>
+
+      <!-- Home-screen widget: today's net, top category, budget usage. -->
+      <receiver
+        android:name=".BudgetWidgetProvider"
+        android:label="@string/widget_name"
+        android:exported="false">
+        <intent-filter>
+            <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+        </intent-filter>
+        <meta-data
+            android:name="android.appwidget.provider"
+            android:resource="@xml/budget_widget_info" />
+      </receiver>
     </application>
 </manifest>
