@@ -9,7 +9,6 @@ import React from 'react';
 import {Pressable} from 'react-native';
 import Animated from 'react-native-reanimated';
 import {usePressScale} from '../animations/SmoothAnimations';
-import {colors} from '../theme/theme';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -17,7 +16,9 @@ export default function PressableScale({
   children,
   onPress,
   scaleTo = 0.97,
-  rippleBorderless = false,
+  // rippleBorderless / rippleRadius kept for call-site compatibility (no-op now;
+  // press feedback is a clean scale+fade that matches any shape — no ripple).
+  rippleBorderless,
   rippleRadius,
   hitSlop,
   disabled = false,
@@ -35,11 +36,6 @@ export default function PressableScale({
       onPressOut={onPressOut}
       disabled={disabled}
       hitSlop={hitSlop}
-      android_ripple={{
-        color: colors.ripple,
-        borderless: rippleBorderless,
-        radius: rippleRadius,
-      }}
       style={[style, animatedStyle]}>
       {children}
     </AnimatedPressable>

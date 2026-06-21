@@ -13,10 +13,12 @@ import SearchBar from '../components/SearchBar';
 import EmptyState from '../components/EmptyState';
 import PressableScale from '../components/PressableScale';
 import FAB from '../components/FAB';
+import Card from '../components/Card';
 import TransactionRow, {ROW_HEIGHT} from '../components/TransactionRow';
 import TransactionDetailModal from '../transactions/TransactionDetailModal';
 import {useCsvImport} from './HomeTab';
 import {colors, spacing, typography, radius} from '../theme/theme';
+import {formatCurrency} from '../utils/formatCurrency';
 
 const FILTERS = [
   {key: 'all', label: 'All'},
@@ -39,7 +41,58 @@ function FilterChip({label, active, onPress}) {
   );
 }
 
-export default function TransactionsTab() {
+/**
+ * Running totals for the current filter/search. In "All" it shows expenses
+ * (left, red) and income (right, green); the Expenses/Income tabs show just
+ * their own total.
+ */
+function SummaryBar({filter, income, expense, currency}) {
+  if (filter === 'expense') {
+    return (
+      <Card style={styles.summary}>
+        <View style={styles.sumRow}>
+          <Text style={styles.sumLabel}>Total expenses</Text>
+          <Text style={[styles.sumValue, {color: colors.expense}]}>
+            {formatCurrency(expense, currency)}
+          </Text>
+        </View>
+      </Card>
+    );
+  }
+  if (filter === 'income') {
+    return (
+      <Card style={styles.summary}>
+        <View style={styles.sumRow}>
+          <Text style={styles.sumLabel}>Total income</Text>
+          <Text style={[styles.sumValue, {color: colors.income}]}>
+            {formatCurrency(income, currency)}
+          </Text>
+        </View>
+      </Card>
+    );
+  }
+  return (
+    <Card style={styles.summary}>
+      <View style={styles.sumSplit}>
+        <View style={styles.sumCol}>
+          <Text style={styles.sumLabel}>Expenses</Text>
+          <Text style={[styles.sumValue, {color: colors.expense}]}>
+            {formatCurrency(expense, currency)}
+          </Text>
+        </View>
+        <View style={styles.sumDivider} />
+        <View style={[styles.sumCol, styles.sumColRight]}>
+          <Text style={styles.sumLabel}>Income</Text>
+          <Text style={[styles.sumValue, {color: colors.income}]}>
+            {formatCurrency(income, currency)}
+          </Text>
+        </View>
+      </View>
+    </Card>
+  );
+}
+
+export default function TransactionsTab({navigation}) {
   const {transactions, settings, resetActivity} = useAppData();
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('all');
@@ -63,6 +116,20 @@ export default function TransactionsTab() {
       );
     });
   }, [transactions, query, filter]);
+
+  // Totals over the currently shown (filtered + searched) transactions.
+  const totals = useMemo(() => {
+    let income = 0;
+    let expense = 0;
+    filtered.forEach(t => {
+      if (t.type === 'income') {
+        income += t.amount;
+      } else {
+        expense += t.amount;
+      }
+    });
+    return {income, expense};
+  }, [filtered]);
 
   const renderItem = useCallback(
     ({item}) => (
@@ -117,6 +184,13 @@ export default function TransactionsTab() {
         </View>
       </View>
 
+      <SummaryBar
+        filter={filter}
+        income={totals.income}
+        expense={totals.expense}
+        currency={currency}
+      />
+
       <FlatList
         data={filtered}
         keyExtractor={item => String(item.id)}
@@ -146,6 +220,18 @@ export default function TransactionsTab() {
       <FAB
         actions={[
           {icon: 'file-upload', label: 'Import CSV', onPress: handleImport},
+          {
+            icon: 'chart-donut',
+            label: 'Budget',
+            color: colors.info,
+            onPress: () => navigation.navigate('Budget'),
+          },
+          {
+            icon: 'autorenew',
+            label: 'Subscriptions',
+            color: colors.income,
+            onPress: () => navigation.navigate('Subscriptions'),
+          },
         ]}
       />
     </SafeAreaView>
@@ -167,8 +253,25 @@ const styles = StyleSheet.create({
   chipActive: {backgroundColor: colors.accent, borderColor: colors.accent},
   chipLabel: {...typography.label, color: colors.textSecondary},
   chipLabelActive: {color: colors.onAccent, fontWeight: '700'},
+  summary: {marginHorizontal: spacing.lg, marginBottom: spacing.md},
+  sumRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  sumSplit: {flexDirection: 'row', alignItems: 'center'},
+  sumCol: {flex: 1},
+  sumColRight: {alignItems: 'flex-end'},
+  sumDivider: {
+    width: 1,
+    height: 34,
+    backgroundColor: colors.border,
+    marginHorizontal: spacing.md,
+  },
+  sumLabel: {...typography.overline},
+  sumValue: {fontSize: 20, fontWeight: '800', marginTop: 3},
   separator: {height: SEP_HEIGHT, backgroundColor: colors.border, marginLeft: 83},
-  listContent: {paddingBottom: spacing.xxl},
+  listContent: {paddingBottom: 110},
   noResults: {alignItems: 'center', paddingTop: spacing.xxl},
   noResultsText: {...typography.label},
 });

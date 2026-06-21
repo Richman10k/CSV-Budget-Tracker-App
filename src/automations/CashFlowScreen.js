@@ -6,7 +6,7 @@
 import React, {useState, useMemo} from 'react';
 import {View, Text, ScrollView, Pressable, StyleSheet} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import Animated, {FadeInDown, LinearTransition} from 'react-native-reanimated';
+import Animated, {LinearTransition} from 'react-native-reanimated';
 
 import {useAppData} from '../context/AppDataContext';
 import Header from '../components/Header';
@@ -17,16 +17,14 @@ import {colors, spacing, typography, radius} from '../theme/theme';
 import {formatCurrency} from '../utils/formatCurrency';
 import {formatMonthYear} from '../utils/formatDate';
 
-function MonthRow({bucket, max, currency, expanded, onToggle, index}) {
+function MonthRow({bucket, max, currency, expanded, onToggle}) {
   const frac = max > 0 ? bucket.total / max : 0;
   // Heavier months trend warmer (amber -> red) so spikes stand out.
   const color =
     frac >= 0.85 ? colors.expense : frac >= 0.5 ? colors.warning : colors.accent;
   const ms = new Date(bucket.year, bucket.month, 1).getTime();
   return (
-    <Animated.View
-      entering={FadeInDown.delay(Math.min(index, 8) * 40).duration(260)}
-      layout={LinearTransition.springify()}>
+    <Animated.View layout={LinearTransition.springify()}>
       <Pressable
         onPress={onToggle}
         android_ripple={{color: colors.ripple}}

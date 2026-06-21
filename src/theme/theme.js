@@ -175,38 +175,42 @@ export const typography = {
  * Layered depth system. `card`/`floating` are neutral black drop-shadows for
  * tactility; `glow` is a colored accent halo for hero/active elements.
  */
+// NOTE: elevations are kept low and consistent. On Android, elevation defines
+// z-order across the whole window, so large elevations make cards draw over
+// neighbours / over the FAB ("UI over UI"). Keep these small; the FAB sets its
+// own high elevation explicitly so it always floats on top.
 export const shadow = {
   card: {
     shadowColor: '#000000',
-    shadowOffset: {width: 0, height: 8},
-    shadowOpacity: 0.45,
-    shadowRadius: 18,
-    elevation: 8,
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 3,
   },
   floating: {
     shadowColor: '#000000',
-    shadowOffset: {width: 0, height: 14},
-    shadowOpacity: 0.55,
-    shadowRadius: 28,
-    elevation: 16,
+    shadowOffset: {width: 0, height: 6},
+    shadowOpacity: 0.35,
+    shadowRadius: 14,
+    elevation: 6,
   },
   glow: {
     shadowColor: colors.accent,
     shadowOffset: {width: 0, height: 0},
-    shadowOpacity: 0.6,
-    shadowRadius: 20,
-    elevation: 12,
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 3,
   },
 };
 
-/** A colored glow shadow for any accent (used on active/hero surfaces). */
-export function glowShadow(color = colors.accent, opacity = 0.5, blur = 18) {
+/** A subtle colored glow for accent surfaces (kept low-elevation on purpose). */
+export function glowShadow(color = colors.accent, opacity = 0.3, blur = 10) {
   return {
     shadowColor: color,
     shadowOffset: {width: 0, height: 0},
     shadowOpacity: opacity,
     shadowRadius: blur,
-    elevation: 10,
+    elevation: 2,
   };
 }
 

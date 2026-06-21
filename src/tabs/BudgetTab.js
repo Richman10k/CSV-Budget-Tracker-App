@@ -13,7 +13,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import Animated, {SlideInDown, FadeIn} from 'react-native-reanimated';
+import Animated, {FadeIn} from 'react-native-reanimated';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import {useAppData} from '../context/AppDataContext';
@@ -22,6 +22,9 @@ import Card from '../components/Card';
 import Button from '../components/Button';
 import EmptyState from '../components/EmptyState';
 import MonthSwitcher from '../components/MonthSwitcher';
+import FAB from '../components/FAB';
+import {useSheetReveal} from '../animations/SmoothAnimations';
+import {navFabActions} from './SubscriptionsTab';
 import SpendingOverview from '../budget/SpendingOverview';
 import BudgetRing from '../budget/BudgetRing';
 import BudgetSuggestionsModal from '../budget/BudgetSuggestionsModal';
@@ -106,7 +109,7 @@ function BudgetRow({label, spent, limit, hasLimit, color, currency, carry = 0, o
   );
 }
 
-export default function BudgetTab() {
+export default function BudgetTab({navigation}) {
   const {
     monthData,
     budgets,
@@ -126,6 +129,8 @@ export default function BudgetTab() {
   const [draft, setDraft] = useState('');
   const [suggestOpen, setSuggestOpen] = useState(false);
   const [lookback, setLookback] = useState(3);
+  const {sheetStyle: editSheetStyle, backdropStyle: editBackdropStyle} =
+    useSheetReveal(!!editing);
 
   const categories = monthData.categories;
   const hasTotal = hasKey(budgets, TOTAL_KEY);
@@ -413,11 +418,16 @@ export default function BudgetTab() {
       <Modal
         visible={!!editing}
         transparent
-        animationType="fade"
+        animationType="none"
+        statusBarTranslucent
         onRequestClose={() => setEditing(null)}>
         <View style={styles.backdrop}>
+          <Animated.View
+            pointerEvents="none"
+            style={[styles.scrim, editBackdropStyle]}
+          />
           <Pressable style={StyleSheet.absoluteFill} onPress={() => setEditing(null)} />
-          <Animated.View entering={SlideInDown.duration(260)} style={styles.sheet}>
+          <Animated.View style={[styles.sheet, editSheetStyle]}>
             <View style={styles.handle} />
             <Text style={styles.modalTitle}>{editing?.label}</Text>
             <Text style={styles.modalSub}>
@@ -460,6 +470,8 @@ export default function BudgetTab() {
         onApply={applySuggestions}
         onClose={() => setSuggestOpen(false)}
       />
+
+      <FAB actions={navFabActions(navigation, handleImport)} />
     </SafeAreaView>
   );
 }
@@ -468,7 +480,7 @@ const styles = StyleSheet.create({
   safe: {flex: 1, backgroundColor: colors.background},
   content: {paddingHorizontal: spacing.lg, paddingTop: spacing.sm},
   gap: {height: spacing.lg},
-  bottomPad: {height: spacing.xxl},
+  bottomPad: {height: 110},
   warning: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -537,7 +549,8 @@ const styles = StyleSheet.create({
   budgetRemain: {...typography.caption, fontWeight: '700'},
   carryNote: {...typography.caption, color: colors.accent, marginTop: 2},
   divider: {height: 1, backgroundColor: colors.border},
-  backdrop: {flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end'},
+  backdrop: {flex: 1, justifyContent: 'flex-end'},
+  scrim: {...StyleSheet.absoluteFillObject, backgroundColor: colors.overlay},
   sheet: {
     backgroundColor: colors.surfaceElevated,
     borderTopLeftRadius: radius.xl,

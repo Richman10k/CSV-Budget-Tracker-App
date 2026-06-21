@@ -4,8 +4,12 @@
  * so it can push the SubscriptionDetail screen.
  */
 import React from 'react';
+import {Easing} from 'react-native';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
-import {createStackNavigator} from '@react-navigation/stack';
+import {
+  createStackNavigator,
+  CardStyleInterpolators,
+} from '@react-navigation/stack';
 
 import TabBar from '../components/TabBar';
 import HomeTab from '../tabs/HomeTab';
@@ -19,10 +23,21 @@ import CashFlowScreen from '../automations/CashFlowScreen';
 const Tab = createBottomTabNavigator();
 const SubStack = createStackNavigator();
 
+// Snappy, native-driven horizontal slide for pushing detail / cash-flow.
+const STACK_TRANSITION = {
+  gestureEnabled: true,
+  cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
+  transitionSpec: {
+    open: {animation: 'timing', config: {duration: 240, easing: Easing.out(Easing.cubic)}},
+    close: {animation: 'timing', config: {duration: 200, easing: Easing.in(Easing.cubic)}},
+  },
+};
+
 /** Subscriptions tab = list -> detail / cash-flow stack. */
 function SubscriptionsStack() {
   return (
-    <SubStack.Navigator screenOptions={{headerShown: false}}>
+    <SubStack.Navigator
+      screenOptions={{headerShown: false, ...STACK_TRANSITION}}>
       <SubStack.Screen name="SubscriptionsHome" component={SubscriptionsTab} />
       <SubStack.Screen name="SubscriptionDetail" component={SubscriptionDetail} />
       <SubStack.Screen name="CashFlow" component={CashFlowScreen} />
@@ -35,13 +50,11 @@ export default function BudgetDashboard() {
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        lazy: true,
-        // Quick, smooth cross-fade between tabs (no layout movement = no jank).
-        animation: 'fade',
-        transitionSpec: {
-          animation: 'timing',
-          config: {duration: 200},
-        },
+        // Pre-mount screens and switch instantly so a screen opened from the FAB
+        // (Budget / Subscriptions) appears fully formed at once — no fade/lazy
+        // reveal that looks like it's "opening weird".
+        lazy: false,
+        animation: 'none',
       }}
       tabBar={props => <TabBar {...props} />}>
       <Tab.Screen name="Home" component={HomeTab} />

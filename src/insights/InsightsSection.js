@@ -5,7 +5,6 @@
  */
 import React from 'react';
 import {View, Text, StyleSheet} from 'react-native';
-import Animated, {FadeInDown} from 'react-native-reanimated';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import Card from '../components/Card';
 import Sparkline from './Sparkline';
@@ -19,12 +18,10 @@ const TONE_COLOR = {
   neutral: colors.info,
 };
 
-function InsightRow({insight, index}) {
+function InsightRow({insight}) {
   const color = TONE_COLOR[insight.tone] || colors.info;
   return (
-    <Animated.View
-      entering={FadeInDown.delay(Math.min(index, 6) * 60).duration(280)}
-      style={styles.row}>
+    <View style={styles.row}>
       <View style={[styles.iconWrap, {backgroundColor: `${color}22`}]}>
         <Icon name={insight.icon} size={18} color={color} />
       </View>
@@ -32,7 +29,7 @@ function InsightRow({insight, index}) {
         <Text style={styles.title}>{insight.title}</Text>
         <Text style={styles.detail}>{insight.detail}</Text>
       </View>
-    </Animated.View>
+    </View>
   );
 }
 

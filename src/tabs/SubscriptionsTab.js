@@ -14,9 +14,30 @@ import PressableScale from '../components/PressableScale';
 import EmptyState from '../components/EmptyState';
 import SubscriptionList from '../subscriptions/SubscriptionList';
 import SubscriptionFormModal from '../subscriptions/SubscriptionFormModal';
+import FAB from '../components/FAB';
 import {useCsvImport} from './HomeTab';
 import {colors, spacing, typography} from '../theme/theme';
 import {formatCurrency} from '../utils/formatCurrency';
+
+/** Standard FAB menu shared across screens: import + jump to Budget/Subscriptions. */
+function navFabActions(navigation, handleImport) {
+  return [
+    {icon: 'file-upload', label: 'Import CSV', onPress: handleImport},
+    {
+      icon: 'chart-donut',
+      label: 'Budget',
+      color: colors.info,
+      onPress: () => navigation.navigate('Budget'),
+    },
+    {
+      icon: 'autorenew',
+      label: 'Subscriptions',
+      color: colors.income,
+      onPress: () => navigation.navigate('Subscriptions'),
+    },
+  ];
+}
+export {navFabActions};
 
 function Stat({label, value, color}) {
   return (
@@ -147,6 +168,8 @@ export default function SubscriptionsTab({navigation}) {
           setAdding(false);
         }}
       />
+
+      <FAB actions={navFabActions(navigation, handleImport)} />
     </SafeAreaView>
   );
 }

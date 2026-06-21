@@ -12,9 +12,10 @@ import {
   StyleSheet,
   ScrollView,
 } from 'react-native';
-import Animated, {SlideInDown} from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import Button from '../components/Button';
+import {useSheetReveal} from '../animations/SmoothAnimations';
 import {colors, spacing, typography, radius} from '../theme/theme';
 
 const INTERVALS = ['weekly', 'monthly', 'yearly'];
@@ -63,6 +64,7 @@ export default function SubscriptionFormModal({
   const [status, setStatus] = useState('active');
   const [category, setCategory] = useState('Subscriptions');
   const [notes, setNotes] = useState('');
+  const {sheetStyle, backdropStyle} = useSheetReveal(visible);
 
   // Seed the form only when the sheet opens (false -> true). Re-running on every
   // `initial` change would wipe the fields as the user types, because callers
@@ -104,11 +106,16 @@ export default function SubscriptionFormModal({
     <Modal
       visible={visible}
       transparent
-      animationType="fade"
+      animationType="none"
+      statusBarTranslucent
       onRequestClose={onClose}>
       <View style={styles.backdrop}>
+        <Animated.View
+          pointerEvents="none"
+          style={[styles.scrim, backdropStyle]}
+        />
         <Pressable style={styles.backdropTouch} onPress={onClose} />
-        <Animated.View entering={SlideInDown.duration(280)} style={styles.sheet}>
+        <Animated.View style={[styles.sheet, sheetStyle]}>
           <View style={styles.handle} />
           <View style={styles.headerRow}>
             <Text style={styles.title}>{title}</Text>
@@ -179,7 +186,8 @@ export default function SubscriptionFormModal({
 }
 
 const styles = StyleSheet.create({
-  backdrop: {flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end'},
+  backdrop: {flex: 1, justifyContent: 'flex-end'},
+  scrim: {...StyleSheet.absoluteFillObject, backgroundColor: colors.overlay},
   backdropTouch: {...StyleSheet.absoluteFillObject},
   sheet: {
     backgroundColor: colors.surfaceElevated,

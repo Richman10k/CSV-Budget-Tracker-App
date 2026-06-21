@@ -14,11 +14,12 @@ import {
   ActivityIndicator,
   StyleSheet,
 } from 'react-native';
-import Animated, {SlideInDown} from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import {useAppData} from '../context/AppDataContext';
 import Button from '../components/Button';
+import {useSheetReveal} from '../animations/SmoothAnimations';
 import {colors, spacing, typography, radius} from '../theme/theme';
 import {formatSigned} from '../utils/formatCurrency';
 import {formatDate} from '../utils/formatDate';
@@ -38,6 +39,7 @@ export default function TransactionDetailModal({transactionId, visible, onClose}
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [fullScreen, setFullScreen] = useState(false);
+  const {sheetStyle, backdropStyle} = useSheetReveal(visible);
 
   const receipt = tx && tx.receipt;
   const isImage = receipt && IMAGE_EXTS.includes((receipt.ext || '').toLowerCase());
@@ -79,10 +81,19 @@ export default function TransactionDetailModal({transactionId, visible, onClose}
   };
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="none"
+      statusBarTranslucent
+      onRequestClose={onClose}>
       <View style={styles.backdrop}>
+        <Animated.View
+          pointerEvents="none"
+          style={[styles.scrim, backdropStyle]}
+        />
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-        <Animated.View entering={SlideInDown.duration(260)} style={styles.sheet}>
+        <Animated.View style={[styles.sheet, sheetStyle]}>
           <View style={styles.handle} />
           {!tx ? (
             <Text style={styles.muted}>Transaction not found.</Text>
@@ -108,8 +119,16 @@ export default function TransactionDetailModal({transactionId, visible, onClose}
 
               <Text style={styles.sectionLabel}>Receipt</Text>
               <View style={styles.receiptBox}>
-                {loading ? (
-                  <ActivityIndicator color={colors.accent} />
+                {busy ? (
+                  <View style={styles.receiptCenter}>
+                    <ActivityIndicator color={colors.accent} />
+                    <Text style={styles.receiptHint}>Saving receipt…</Text>
+                  </View>
+                ) : loading ? (
+                  <View style={styles.receiptCenter}>
+                    <ActivityIndicator color={colors.accent} />
+                    <Text style={styles.receiptHint}>Loading…</Text>
+                  </View>
                 ) : receipt ? (
                   isImage && uri ? (
                     <Pressable onPress={() => setFullScreen(true)} style={styles.thumbWrap}>
@@ -166,7 +185,8 @@ export default function TransactionDetailModal({transactionId, visible, onClose}
 }
 
 const styles = StyleSheet.create({
-  backdrop: {flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end'},
+  backdrop: {flex: 1, justifyContent: 'flex-end'},
+  scrim: {...StyleSheet.absoluteFillObject, backgroundColor: colors.overlay},
   sheet: {
     backgroundColor: colors.surfaceElevated,
     borderTopLeftRadius: radius.xl,
@@ -198,7 +218,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   receiptBox: {
-    minHeight: 80,
+    minHeight: 160,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
@@ -207,7 +227,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: spacing.md,
     marginBottom: spacing.lg,
+    overflow: 'hidden',
   },
+  receiptCenter: {alignItems: 'center', justifyContent: 'center'},
+  receiptHint: {...typography.caption, marginTop: spacing.sm},
   thumbWrap: {alignItems: 'center'},
   thumb: {width: '100%', height: 200, borderRadius: radius.sm, aspectRatio: undefined},
   tapHint: {...typography.caption, marginTop: spacing.sm},

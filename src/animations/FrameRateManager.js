@@ -11,7 +11,8 @@ import {useEffect, useState} from 'react';
 import {measureFrameRate, getFrameRateTier} from '../utils/getDeviceFrameRate';
 
 // Base (designed-for-120) durations in ms. Lower tiers get a mild stretch.
-const BASE_DURATIONS = {fast: 140, base: 240, slow: 380};
+// Tuned snappy — long animations read as sluggish on a finance dashboard.
+const BASE_DURATIONS = {fast: 110, base: 180, slow: 280};
 
 const TIER_SCALE = {
   120: 1.0,

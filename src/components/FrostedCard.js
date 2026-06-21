@@ -97,7 +97,6 @@ export default function FrostedCard({
       onLongPress={onLongPress}
       onPressIn={onPressIn}
       onPressOut={onPressOut}
-      android_ripple={{color: colors.ripple, borderless: false}}
       style={[...base, animatedStyle]}>
       {inner}
     </AnimatedPressable>

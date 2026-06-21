@@ -46,20 +46,40 @@ export async function pickReceipt() {
   }
 }
 
+function tempPath(id, ext) {
+  return `${RNFS.CachesDirectoryPath}/receipt-${id}.${ext || 'jpg'}`;
+}
+
 /** Encrypt a source file and store it. Returns {id, ext}. */
 export async function saveEncrypted(srcPath, ext) {
   await ensureDir();
   const base64 = await RNFS.readFile(srcPath, 'base64');
   const cipher = await encrypt(base64);
   const id = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  const finalExt = ext || 'jpg';
   await RNFS.writeFile(`${DIR}/${id}.enc`, cipher, 'utf8');
-  return {id, ext: ext || 'jpg'};
+  // Pre-warm the decrypted preview cache from the bytes we already have, so the
+  // first view is instant (no extra decrypt right after attaching).
+  try {
+    await RNFS.writeFile(tempPath(id, finalExt), base64, 'base64');
+  } catch (e) {
+    // non-fatal — resolveForView will decrypt on demand
+  }
+  return {id, ext: finalExt};
 }
 
-/** Decrypt a stored receipt to a temp cache file; returns a file:// URI or null. */
+/**
+ * Return a viewable file:// URI for a receipt. Serves the decrypted preview from
+ * the cache when present (instant); only decrypts the encrypted blob on a cache
+ * miss, then caches it for next time.
+ */
 export async function resolveForView(meta) {
   if (!meta || !meta.id) {
     return null;
+  }
+  const tmp = tempPath(meta.id, meta.ext);
+  if (await RNFS.exists(tmp)) {
+    return `file://${tmp}`;
   }
   const enc = `${DIR}/${meta.id}.enc`;
   if (!(await RNFS.exists(enc))) {
@@ -67,20 +87,23 @@ export async function resolveForView(meta) {
   }
   const cipher = await RNFS.readFile(enc, 'utf8');
   const base64 = await decrypt(cipher);
-  const tmp = `${RNFS.CachesDirectoryPath}/receipt-${meta.id}.${meta.ext || 'jpg'}`;
   await RNFS.writeFile(tmp, base64, 'base64');
   return `file://${tmp}`;
 }
 
-/** Delete a stored receipt blob (best-effort). */
+/** Delete a stored receipt blob + its cached preview (best-effort). */
 export async function deleteReceipt(meta) {
   if (!meta || !meta.id) {
     return;
   }
   const enc = `${DIR}/${meta.id}.enc`;
+  const tmp = tempPath(meta.id, meta.ext);
   try {
     if (await RNFS.exists(enc)) {
       await RNFS.unlink(enc);
+    }
+    if (await RNFS.exists(tmp)) {
+      await RNFS.unlink(tmp);
     }
   } catch (e) {
     // best-effort

@@ -14,14 +14,7 @@ import Animated, {
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import FrostedCard from '../components/FrostedCard';
 import {AnimatedCurrency} from '../components/AnimatedNumber';
-import {
-  colors,
-  spacing,
-  typography,
-  radius,
-  budgetStatus,
-  glowShadow,
-} from '../theme/theme';
+import {colors, spacing, typography, radius, budgetStatus} from '../theme/theme';
 import {getDurations} from '../animations/FrameRateManager';
 import {formatCurrency} from '../utils/formatCurrency';
 
@@ -38,9 +31,7 @@ function ProgressBar({fraction, color}) {
     <View
       style={styles.track}
       onLayout={e => setTrackWidth(e.nativeEvent.layout.width)}>
-      <Animated.View
-        style={[styles.fill, {backgroundColor: color}, glowShadow(color, 0.6, 10), style]}
-      />
+      <Animated.View style={[styles.fill, {backgroundColor: color}, style]} />
     </View>
   );
 }
@@ -72,7 +63,7 @@ export default function SpendingOverview({
   const over = status.state === 'over';
 
   return (
-    <FrostedCard intensity="elevated" glowColor={colors.accent}>
+    <FrostedCard intensity="elevated">
       <Text style={styles.caption}>SPENT THIS MONTH</Text>
       <AnimatedCurrency
         value={spending}

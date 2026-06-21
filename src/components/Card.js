@@ -53,7 +53,6 @@ export default function Card({
       onPress={onPress}
       onPressIn={onPressIn}
       onPressOut={onPressOut}
-      android_ripple={{color: colors.ripple, borderless: false}}
       style={[...baseStyle, animatedStyle]}>
       {inner}
     </AnimatedPressable>

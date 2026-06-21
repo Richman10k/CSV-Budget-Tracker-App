@@ -16,15 +16,18 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import Animated, {SlideInDown} from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import {useAppData} from '../context/AppDataContext';
 import Header from '../components/Header';
 import Card from '../components/Card';
 import PressableScale from '../components/PressableScale';
+import FAB from '../components/FAB';
 import PINLock from '../auth/PINLock';
+import {usePopupReveal} from '../animations/SmoothAnimations';
 import {useCsvImport} from './HomeTab';
+import {navFabActions} from './SubscriptionsTab';
 import buildInfo from '../buildInfo';
 import {colors, spacing, typography, radius} from '../theme/theme';
 
@@ -63,7 +66,7 @@ function SectionLabel({children}) {
   return <Text style={styles.sectionLabel}>{children}</Text>;
 }
 
-export default function SettingsTab() {
+export default function SettingsTab({navigation}) {
   const {
     settings,
     updateSettings,
@@ -80,6 +83,7 @@ export default function SettingsTab() {
   } = useAppData();
   const handleImport = useCsvImport();
   const [changingPin, setChangingPin] = useState(false);
+  const {popupStyle, backdropStyle} = usePopupReveal(changingPin);
 
   const cycleAutoLock = () => {
     const idx = AUTO_LOCK_OPTIONS.indexOf(settings.autoLockSeconds);
@@ -303,10 +307,15 @@ export default function SettingsTab() {
       <Modal
         visible={changingPin}
         transparent
-        animationType="fade"
+        animationType="none"
+        statusBarTranslucent
         onRequestClose={() => setChangingPin(false)}>
         <View style={styles.backdrop}>
-          <Animated.View entering={SlideInDown.duration(260)} style={styles.pinSheet}>
+          <Animated.View
+            pointerEvents="none"
+            style={[styles.scrim, backdropStyle]}
+          />
+          <Animated.View style={[styles.pinSheet, popupStyle]}>
             <Pressable
               onPress={() => setChangingPin(false)}
               hitSlop={10}
@@ -325,6 +334,8 @@ export default function SettingsTab() {
           </Animated.View>
         </View>
       </Modal>
+
+      <FAB actions={navFabActions(navigation, handleImport)} />
     </SafeAreaView>
   );
 }
@@ -356,8 +367,9 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   version: {...typography.caption, marginTop: spacing.md, textAlign: 'center'},
-  bottomPad: {height: spacing.xxl},
-  backdrop: {flex: 1, backgroundColor: colors.overlay, justifyContent: 'center'},
+  bottomPad: {height: 110},
+  backdrop: {flex: 1, justifyContent: 'center'},
+  scrim: {...StyleSheet.absoluteFillObject, backgroundColor: colors.overlay},
   pinSheet: {
     backgroundColor: colors.surfaceElevated,
     margin: spacing.lg,

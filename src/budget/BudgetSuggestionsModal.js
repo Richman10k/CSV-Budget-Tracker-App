@@ -14,9 +14,10 @@ import {
   ScrollView,
   StyleSheet,
 } from 'react-native';
-import Animated, {SlideInDown} from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import Button from '../components/Button';
+import {useSheetReveal} from '../animations/SmoothAnimations';
 import {colors, spacing, typography, radius, colorForCategory} from '../theme/theme';
 import {formatCurrency} from '../utils/formatCurrency';
 
@@ -33,6 +34,7 @@ export default function BudgetSuggestionsModal({
   // Track which categories are selected (default: all on each open).
   const [selected, setSelected] = useState({});
   const wasVisible = useRef(false);
+  const {sheetStyle, backdropStyle} = useSheetReveal(visible);
 
   useEffect(() => {
     if (visible && !wasVisible.current) {
@@ -70,10 +72,19 @@ export default function BudgetSuggestionsModal({
   };
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="none"
+      statusBarTranslucent
+      onRequestClose={onClose}>
       <View style={styles.backdrop}>
+        <Animated.View
+          pointerEvents="none"
+          style={[styles.scrim, backdropStyle]}
+        />
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-        <Animated.View entering={SlideInDown.duration(280)} style={styles.sheet}>
+        <Animated.View style={[styles.sheet, sheetStyle]}>
           <View style={styles.handle} />
           <View style={styles.headerRow}>
             <View style={{flex: 1}}>
@@ -179,7 +190,8 @@ export default function BudgetSuggestionsModal({
 }
 
 const styles = StyleSheet.create({
-  backdrop: {flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end'},
+  backdrop: {flex: 1, justifyContent: 'flex-end'},
+  scrim: {...StyleSheet.absoluteFillObject, backgroundColor: colors.overlay},
   sheet: {
     backgroundColor: colors.surfaceElevated,
     borderTopLeftRadius: radius.xl,

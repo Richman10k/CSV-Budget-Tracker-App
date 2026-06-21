@@ -1,13 +1,17 @@
 /**
  * TabBar.js — custom frosted, pill-style bottom navigation for React Navigation.
  *
- * A floating glass bar with a glowing indigo pill that springs under the focused
- * tab and a focused-icon scale-up. All motion runs on the UI thread (Reanimated)
- * so it stays smooth up to 120fps. (Haptics are a no-op — the app ships with no
+ * Shows three primary destinations — Home, Activity, Settings. Budget and
+ * Subscriptions are reached from the "+" FAB instead, so they're registered as
+ * screens but hidden from the bar (when one of them is active, no pill shows).
+ *
+ * A glowing indigo pill springs under the focused tab and the focused icon
+ * scales up. All motion runs on the UI thread (Reanimated). Press feedback is a
+ * clean scale (no ripple). (Haptics are a no-op — the app ships with no
  * permissions; see utils/haptics.)
  */
 import React, {useState, useEffect} from 'react';
-import {View, Text, Pressable, StyleSheet} from 'react-native';
+import {View, Text, StyleSheet} from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -15,22 +19,23 @@ import Animated, {
 } from 'react-native-reanimated';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import PressableScale from './PressableScale';
 import {colors, spacing, radius, glowShadow} from '../theme/theme';
 import {getSpring} from '../animations/FrameRateManager';
 import {tapHaptic} from '../utils/haptics';
 
-const ROW_HEIGHT = 56;
+const ROW_HEIGHT = 62;
 
-// Route name -> icon (focused / unfocused) + short label.
+// The three destinations shown in the bar, in display order.
+const PRIMARY = ['Home', 'Transactions', 'Settings'];
+
 const TAB_META = {
   Home: {on: 'home-variant', off: 'home-variant-outline', label: 'Home'},
-  Subscriptions: {on: 'autorenew', off: 'autorenew', label: 'Subs'},
   Transactions: {
     on: 'swap-horizontal-bold',
     off: 'swap-horizontal',
     label: 'Activity',
   },
-  Budget: {on: 'chart-donut', off: 'chart-donut', label: 'Budget'},
   Settings: {on: 'cog', off: 'cog-outline', label: 'Settings'},
 };
 
@@ -50,12 +55,10 @@ function TabItem({focused, meta, label, onPress, accessibilityLabel}) {
   const tint = focused ? colors.accent : colors.textMuted;
 
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={focused ? {selected: true} : {}}
+    <PressableScale
+      scaleTo={0.9}
       accessibilityLabel={accessibilityLabel || label}
       onPress={onPress}
-      android_ripple={{color: colors.ripple, borderless: true, radius: 36}}
       style={styles.tab}>
       <Animated.View style={iconStyle}>
         <Icon name={focused ? meta.on : meta.off} size={24} color={tint} />
@@ -63,23 +66,33 @@ function TabItem({focused, meta, label, onPress, accessibilityLabel}) {
       <Text style={[styles.label, {color: tint}]} numberOfLines={1}>
         {label}
       </Text>
-    </Pressable>
+    </PressableScale>
   );
 }
 
 export default function TabBar({state, descriptors, navigation}) {
   const insets = useSafeAreaInsets();
   const [barWidth, setBarWidth] = useState(0);
-  const tabCount = state.routes.length;
+
+  // Only the primary destinations appear in the bar.
+  const visibleRoutes = PRIMARY.map(name =>
+    state.routes.find(r => r.name === name),
+  ).filter(Boolean);
+  const tabCount = visibleRoutes.length;
   const tabWidth = barWidth ? barWidth / tabCount : 0;
 
-  const indicatorX = useSharedValue(0);
+  const focusedName = state.routes[state.index]?.name;
+  const focusedVisibleIndex = visibleRoutes.findIndex(
+    r => r.name === focusedName,
+  );
+  const showPill = focusedVisibleIndex >= 0;
 
+  const indicatorX = useSharedValue(0);
   useEffect(() => {
-    if (tabWidth > 0) {
-      indicatorX.value = withSpring(state.index * tabWidth, getSpring());
+    if (tabWidth > 0 && focusedVisibleIndex >= 0) {
+      indicatorX.value = withSpring(focusedVisibleIndex * tabWidth, getSpring());
     }
-  }, [state.index, tabWidth, indicatorX]);
+  }, [focusedVisibleIndex, tabWidth, indicatorX]);
 
   const pillStyle = useAnimatedStyle(() => ({
     transform: [{translateX: indicatorX.value}],
@@ -91,15 +104,15 @@ export default function TabBar({state, descriptors, navigation}) {
       <View
         style={styles.row}
         onLayout={e => setBarWidth(e.nativeEvent.layout.width)}>
-        {tabWidth > 0 ? (
+        {tabWidth > 0 && showPill ? (
           <Animated.View style={[styles.pillWrap, pillStyle]} pointerEvents="none">
-            <View style={[styles.pill, glowShadow(colors.accent, 0.45, 14)]} />
+            <View style={[styles.pill, glowShadow(colors.accent, 0.3, 10)]} />
           </Animated.View>
         ) : null}
 
-        {state.routes.map((route, index) => {
+        {visibleRoutes.map(route => {
           const {options} = descriptors[route.key];
-          const focused = state.index === index;
+          const focused = route.name === focusedName;
           const meta = TAB_META[route.name] || {
             on: 'circle',
             off: 'circle-outline',
@@ -162,11 +175,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   pill: {
-    width: '58%',
-    height: ROW_HEIGHT - 12,
+    // Generous, rounded highlight that comfortably wraps the icon + label.
+    width: '74%',
+    height: ROW_HEIGHT - 8,
     borderRadius: radius.pill,
     backgroundColor: colors.accentDim,
     borderWidth: 1,
-    borderColor: 'rgba(99,102,241,0.45)',
+    borderColor: 'rgba(99,102,241,0.40)',
   },
 });

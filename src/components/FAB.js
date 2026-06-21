@@ -1,10 +1,12 @@
 /**
- * FAB.js — frosted floating action button with an expandable radial menu.
+ * FAB.js — frosted floating action button with an expandable menu.
  *
  * Tapping the main button springs it open into a stack of mini frosted action
- * cards (icon + label), each entering with a staggered spring. The "+" rotates
- * to an "×" and a dim backdrop catches outside taps. All motion runs on the UI
- * thread (Reanimated). (Haptics are a no-op — the app ships with no permissions.)
+ * cards (icon + label); the "+" rotates to an "×" and a dim backdrop catches
+ * outside taps. The button and menu use a high elevation + zIndex so they always
+ * float above page content (Android orders by elevation). All motion runs on the
+ * UI thread (Reanimated). (Haptics are a no-op — the app ships with no
+ * permissions.)
  *
  * Pass `actions`: [{ icon, label, onPress, color? }]. With a single action it
  * acts as a plain floating button (no menu).
@@ -19,28 +21,29 @@ import Animated, {
   FadeOut,
 } from 'react-native-reanimated';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {getSpring} from '../animations/FrameRateManager';
 import {enterFromBottom} from '../animations/SmoothAnimations';
 import {tapHaptic} from '../utils/haptics';
-import {colors, spacing, typography, radius, shadow, glowShadow} from '../theme/theme';
+import {colors, spacing, typography, radius, shadow} from '../theme/theme';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+// High enough to sit above any card (cards use elevation <= 3).
+const FAB_Z = 24;
 
 function ActionItem({action, index, onPress}) {
   const color = action.color || colors.accent;
   return (
     <Animated.View
       entering={enterFromBottom(index)}
-      exiting={FadeOut.duration(120)}
+      exiting={FadeOut.duration(100)}
       style={styles.actionRow}>
       <View style={styles.actionLabelWrap}>
         <Text style={styles.actionLabel}>{action.label}</Text>
       </View>
       <Pressable
         onPress={onPress}
-        android_ripple={{color: colors.ripple, borderless: true, radius: 28}}
-        style={[styles.actionBtn, glowShadow(color, 0.4, 14)]}>
+        style={[styles.actionBtn, {borderColor: `${color}66`}]}>
         <Icon name={action.icon} size={22} color={color} />
       </Pressable>
     </Animated.View>
@@ -53,7 +56,6 @@ export default function FAB({
   color = colors.accent,
   extraBottom = 0,
 }) {
-  const insets = useSafeAreaInsets();
   const [open, setOpen] = useState(false);
   const progress = useSharedValue(0);
   const scale = useSharedValue(1);
@@ -77,22 +79,21 @@ export default function FAB({
   const runAction = fn => {
     tapHaptic();
     setOpenState(false);
-    // let the menu start closing before the (possibly heavy) action fires
-    setTimeout(() => fn?.(), 60);
+    fn?.();
   };
 
   const iconStyle = useAnimatedStyle(() => ({
     transform: [{rotate: `${progress.value * 135}deg`}, {scale: scale.value}],
   }));
 
-  const bottom = Math.max(insets.bottom, 12) + 64 + extraBottom;
+  const bottom = spacing.lg + extraBottom;
 
   return (
-    <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+    <View style={styles.host} pointerEvents="box-none">
       {open && !single ? (
         <AnimatedPressable
-          entering={FadeIn.duration(160)}
-          exiting={FadeOut.duration(160)}
+          entering={FadeIn.duration(140)}
+          exiting={FadeOut.duration(140)}
           onPress={() => setOpenState(false)}
           style={styles.backdrop}
         />
@@ -122,8 +123,7 @@ export default function FAB({
           onPressOut={() => {
             scale.value = withSpring(1, getSpring());
           }}
-          android_ripple={{color: colors.ripple, borderless: true, radius: 34}}
-          style={[styles.fab, {backgroundColor: color}, glowShadow(color, 0.65, 22)]}>
+          style={[styles.fab, {backgroundColor: color}]}>
           <Animated.View style={iconStyle}>
             <Icon name={icon} size={28} color={colors.onAccent} />
           </Animated.View>
@@ -134,11 +134,14 @@ export default function FAB({
 }
 
 const styles = StyleSheet.create({
+  host: {...StyleSheet.absoluteFillObject, zIndex: FAB_Z, elevation: FAB_Z},
   backdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(6,7,12,0.55)',
+    zIndex: FAB_Z,
+    elevation: FAB_Z - 2,
   },
-  dock: {position: 'absolute', alignItems: 'flex-end'},
+  dock: {position: 'absolute', alignItems: 'flex-end', zIndex: FAB_Z + 1},
   actions: {alignItems: 'flex-end', marginBottom: spacing.md},
   actionRow: {
     flexDirection: 'row',
@@ -153,6 +156,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: 8,
     marginRight: spacing.md,
+    elevation: FAB_Z,
     ...shadow.card,
   },
   actionLabel: {...typography.label, color: colors.text},
@@ -165,6 +169,8 @@ const styles = StyleSheet.create({
     borderColor: colors.borderFrost,
     alignItems: 'center',
     justifyContent: 'center',
+    elevation: FAB_Z,
+    ...shadow.card,
   },
   fab: {
     width: 60,
@@ -174,5 +180,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.22)',
+    elevation: FAB_Z,
+    ...shadow.floating,
   },
 });

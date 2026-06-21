@@ -39,7 +39,6 @@ export default function Button({
       onPress={onPress}
       onPressIn={onPressIn}
       onPressOut={onPressOut}
-      android_ripple={{color: colors.ripple, borderless: false}}
       style={[
         styles.base,
         {backgroundColor: v.bg, borderColor: v.border},
