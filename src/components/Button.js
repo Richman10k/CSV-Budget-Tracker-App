@@ -7,15 +7,15 @@ import {Pressable, Text, StyleSheet, View, ActivityIndicator} from 'react-native
 import Animated from 'react-native-reanimated';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {usePressScale} from '../animations/SmoothAnimations';
-import {colors, radius, spacing} from '../theme/theme';
+import {colors, radius, spacing, glowShadow} from '../theme/theme';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 const VARIANTS = {
-  primary: {bg: colors.accent, fg: colors.black, border: 'transparent'},
-  secondary: {bg: colors.surfaceMuted, fg: colors.text, border: colors.border},
+  primary: {bg: colors.accent, fg: colors.onAccent, border: 'transparent', glow: colors.accent},
+  secondary: {bg: colors.surfaceMuted, fg: colors.text, border: colors.borderFrost},
   ghost: {bg: 'transparent', fg: colors.accent, border: 'transparent'},
-  danger: {bg: colors.expense, fg: colors.white, border: 'transparent'},
+  danger: {bg: colors.expense, fg: colors.white, border: 'transparent', glow: colors.expense},
 };
 
 export default function Button({
@@ -43,6 +43,7 @@ export default function Button({
       style={[
         styles.base,
         {backgroundColor: v.bg, borderColor: v.border},
+        v.glow && !isDisabled && glowShadow(v.glow, 0.5, 16),
         fullWidth && styles.fullWidth,
         isDisabled && styles.disabled,
         animatedStyle,

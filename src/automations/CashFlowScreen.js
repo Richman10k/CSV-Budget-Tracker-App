@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
   },
   rangeChipActive: {backgroundColor: colors.accent, borderColor: colors.accent},
   rangeText: {...typography.label, color: colors.textSecondary},
-  rangeTextActive: {color: colors.black},
+  rangeTextActive: {color: colors.onAccent, fontWeight: '700'},
   monthRow: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,

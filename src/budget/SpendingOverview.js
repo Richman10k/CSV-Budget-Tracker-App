@@ -1,7 +1,8 @@
 /**
- * SpendingOverview.js — headline "spent this month" card with an animated
- * progress bar against the monthly budget and income/expense chips. Shared by
- * the Home and Budget tabs.
+ * SpendingOverview.js — headline "spent this month" hero. A frosted-glass card
+ * with an accent glow, a counting headline number (AnimatedCurrency), an
+ * animated progress bar against the monthly budget, and income/expense chips.
+ * Shared by the Home and Budget tabs.
  */
 import React, {useEffect, useState} from 'react';
 import {View, Text, StyleSheet} from 'react-native';
@@ -11,8 +12,16 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import Card from '../components/Card';
-import {colors, spacing, typography, radius, budgetStatus} from '../theme/theme';
+import FrostedCard from '../components/FrostedCard';
+import {AnimatedCurrency} from '../components/AnimatedNumber';
+import {
+  colors,
+  spacing,
+  typography,
+  radius,
+  budgetStatus,
+  glowShadow,
+} from '../theme/theme';
 import {getDurations} from '../animations/FrameRateManager';
 import {formatCurrency} from '../utils/formatCurrency';
 
@@ -29,7 +38,9 @@ function ProgressBar({fraction, color}) {
     <View
       style={styles.track}
       onLayout={e => setTrackWidth(e.nativeEvent.layout.width)}>
-      <Animated.View style={[styles.fill, {backgroundColor: color}, style]} />
+      <Animated.View
+        style={[styles.fill, {backgroundColor: color}, glowShadow(color, 0.6, 10), style]}
+      />
     </View>
   );
 }
@@ -37,7 +48,9 @@ function ProgressBar({fraction, color}) {
 function Chip({icon, label, value, color}) {
   return (
     <View style={styles.chip}>
-      <Icon name={icon} size={18} color={color} />
+      <View style={[styles.chipIcon, {backgroundColor: `${color}22`}]}>
+        <Icon name={icon} size={18} color={color} />
+      </View>
       <View style={styles.chipText}>
         <Text style={styles.chipLabel}>{label}</Text>
         <Text style={[styles.chipValue, {color}]}>{value}</Text>
@@ -59,9 +72,13 @@ export default function SpendingOverview({
   const over = status.state === 'over';
 
   return (
-    <Card elevated>
-      <Text style={styles.caption}>Spent this month</Text>
-      <Text style={styles.amount}>{formatCurrency(spending, currency)}</Text>
+    <FrostedCard intensity="elevated" glowColor={colors.accent}>
+      <Text style={styles.caption}>SPENT THIS MONTH</Text>
+      <AnimatedCurrency
+        value={spending}
+        currency={currency}
+        style={styles.amount}
+      />
 
       {hasBudget ? (
         <>
@@ -83,25 +100,25 @@ export default function SpendingOverview({
 
       <View style={styles.chips}>
         <Chip
-          icon="arrow-up-circle"
+          icon="arrow-up"
           label="Income"
           value={formatCurrency(income, currency)}
           color={colors.income}
         />
         <Chip
-          icon="arrow-down-circle"
+          icon="arrow-down"
           label="Expenses"
           value={formatCurrency(spending, currency)}
           color={colors.expense}
         />
       </View>
-    </Card>
+    </FrostedCard>
   );
 }
 
 const styles = StyleSheet.create({
-  caption: {...typography.caption},
-  amount: {...typography.display, marginVertical: spacing.xs},
+  caption: {...typography.overline},
+  amount: {...typography.display, color: colors.text, marginVertical: spacing.xs},
   track: {
     height: 10,
     borderRadius: radius.pill,
@@ -126,7 +143,15 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md,
   },
   chip: {flexDirection: 'row', alignItems: 'center', flex: 1},
-  chipText: {marginLeft: spacing.sm},
+  chipIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.sm,
+  },
+  chipText: {marginLeft: 0},
   chipLabel: {...typography.caption},
   chipValue: {fontSize: 16, fontWeight: '700'},
 });

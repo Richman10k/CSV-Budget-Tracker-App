@@ -199,7 +199,7 @@ const styles = StyleSheet.create({
   },
   tabActive: {backgroundColor: colors.accent, borderColor: colors.accent},
   tabLabel: {...typography.label, color: colors.textSecondary},
-  tabLabelActive: {color: colors.black},
+  tabLabelActive: {color: colors.onAccent, fontWeight: '700'},
   list: {paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl, flexGrow: 1},
   card: {marginBottom: spacing.md},
   priceBadge: {

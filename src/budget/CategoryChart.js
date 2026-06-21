@@ -18,7 +18,14 @@ import Animated, {
   withTiming,
   withDelay,
 } from 'react-native-reanimated';
-import {colors, spacing, typography, radius, colorForCategory} from '../theme/theme';
+import {
+  colors,
+  spacing,
+  typography,
+  radius,
+  colorForCategory,
+  glowShadow,
+} from '../theme/theme';
 import {getDurations} from '../animations/FrameRateManager';
 import {formatCurrency} from '../utils/formatCurrency';
 
@@ -127,7 +134,9 @@ function Bar({fraction, color, index}) {
     <View
       style={styles.barTrack}
       onLayout={e => setTrackWidth(e.nativeEvent.layout.width)}>
-      <Animated.View style={[styles.barFill, {backgroundColor: color}, style]} />
+      <Animated.View
+        style={[styles.barFill, {backgroundColor: color}, glowShadow(color, 0.45, 8), style]}
+      />
     </View>
   );
 }

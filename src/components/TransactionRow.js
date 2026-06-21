@@ -20,6 +20,7 @@ function TransactionRow({transaction, currency = 'USD', onPress}) {
       onPress={onPress ? () => onPress(transaction) : undefined}
       android_ripple={onPress ? {color: colors.ripple} : undefined}
       style={styles.row}>
+      <View style={[styles.accentBar, {backgroundColor: tint}]} />
       <View style={[styles.iconWrap, {backgroundColor: `${tint}22`}]}>
         <Icon
           name={isIncome ? 'arrow-up' : 'arrow-down'}
@@ -53,6 +54,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
+  },
+  accentBar: {
+    width: 3,
+    height: 34,
+    borderRadius: 2,
+    marginRight: spacing.md,
   },
   iconWrap: {
     width: 40,

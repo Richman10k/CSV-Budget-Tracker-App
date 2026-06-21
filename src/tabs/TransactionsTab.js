@@ -12,6 +12,7 @@ import Header from '../components/Header';
 import SearchBar from '../components/SearchBar';
 import EmptyState from '../components/EmptyState';
 import PressableScale from '../components/PressableScale';
+import FAB from '../components/FAB';
 import TransactionRow, {ROW_HEIGHT} from '../components/TransactionRow';
 import TransactionDetailModal from '../transactions/TransactionDetailModal';
 import {useCsvImport} from './HomeTab';
@@ -141,6 +142,12 @@ export default function TransactionsTab() {
         visible={selectedId != null}
         onClose={() => setSelectedId(null)}
       />
+
+      <FAB
+        actions={[
+          {icon: 'file-upload', label: 'Import CSV', onPress: handleImport},
+        ]}
+      />
     </SafeAreaView>
   );
 }
@@ -159,8 +166,8 @@ const styles = StyleSheet.create({
   },
   chipActive: {backgroundColor: colors.accent, borderColor: colors.accent},
   chipLabel: {...typography.label, color: colors.textSecondary},
-  chipLabelActive: {color: colors.black},
-  separator: {height: SEP_HEIGHT, backgroundColor: colors.border, marginLeft: 68},
+  chipLabelActive: {color: colors.onAccent, fontWeight: '700'},
+  separator: {height: SEP_HEIGHT, backgroundColor: colors.border, marginLeft: 83},
   listContent: {paddingBottom: spacing.xxl},
   noResults: {alignItems: 'center', paddingTop: spacing.xxl},
   noResultsText: {...typography.label},

@@ -54,6 +54,20 @@ export default function BudgetRing({
           strokeWidth={strokeWidth}
           fill="none"
         />
+        {/* Soft glowing halo following the filled arc */}
+        <AnimatedCircle
+          cx={cx}
+          cy={cy}
+          r={r}
+          stroke={color}
+          strokeOpacity={0.22}
+          strokeWidth={strokeWidth + 8}
+          fill="none"
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          animatedProps={animatedProps}
+          transform={`rotate(-90 ${cx} ${cy})`}
+        />
         {/* Animated progress arc, starting at 12 o'clock */}
         <AnimatedCircle
           cx={cx}

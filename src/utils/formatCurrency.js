@@ -14,6 +14,11 @@ const CURRENCY_SYMBOLS = {
   JPY: '¥',
 };
 
+/** The bare symbol for a currency code, e.g. "USD" -> "$". */
+export function currencySymbol(currency = 'USD') {
+  return CURRENCY_SYMBOLS[currency] || '$';
+}
+
 function manualFormat(amount, currency) {
   const symbol = CURRENCY_SYMBOLS[currency] || '$';
   const fixed = Math.abs(Number(amount) || 0).toFixed(2);

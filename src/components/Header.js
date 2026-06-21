@@ -16,7 +16,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import PressableScale from './PressableScale';
 import {colors, spacing, typography} from '../theme/theme';
 
-function HeaderAction({icon, onPress, color = colors.text}) {
+function HeaderAction({icon, onPress, color = colors.text, accent = false}) {
   if (!icon) {
     return <View style={styles.actionPlaceholder} />;
   }
@@ -27,8 +27,8 @@ function HeaderAction({icon, onPress, color = colors.text}) {
       scaleTo={0.86}
       rippleBorderless
       rippleRadius={24}
-      style={styles.action}>
-      <Icon name={icon} size={24} color={color} />
+      style={[styles.action, accent && styles.actionAccent]}>
+      <Icon name={icon} size={22} color={color} />
     </PressableScale>
   );
 }
@@ -90,7 +90,12 @@ export default function Header({
           </Animated.Text>
         ) : null}
       </View>
-      <HeaderAction icon={rightIcon} onPress={onRightPress} color={colors.accent} />
+      <HeaderAction
+        icon={rightIcon}
+        onPress={onRightPress}
+        color={colors.accent}
+        accent
+      />
     </View>
   );
 }
@@ -108,11 +113,16 @@ const styles = StyleSheet.create({
   title: {...typography.title},
   subtitle: {...typography.caption, marginTop: 2},
   action: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  actionPlaceholder: {width: 40, height: 40},
+  actionAccent: {
+    backgroundColor: colors.accentDim,
+    borderWidth: 1,
+    borderColor: 'rgba(99,102,241,0.40)',
+  },
+  actionPlaceholder: {width: 42, height: 42},
 });

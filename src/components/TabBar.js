@@ -1,8 +1,9 @@
 /**
- * TabBar.js — custom bottom navigation bar for React Navigation.
+ * TabBar.js — custom frosted, pill-style bottom navigation for React Navigation.
  *
- * Renders five tabs with icons + labels and a spring-animated pill that glides
- * under the focused tab (UI thread, smooth up to 120 fps).
+ * A floating glass bar with a glowing indigo pill that springs under the focused
+ * tab, focused-icon scale-up, and a subtle haptic tick on tap. All motion runs
+ * on the UI thread (Reanimated) so it stays smooth up to 120fps.
  */
 import React, {useState, useEffect} from 'react';
 import {View, Text, Pressable, StyleSheet} from 'react-native';
@@ -13,8 +14,11 @@ import Animated, {
 } from 'react-native-reanimated';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import {colors, spacing, radius} from '../theme/theme';
+import {colors, spacing, radius, glowShadow} from '../theme/theme';
 import {getSpring} from '../animations/FrameRateManager';
+import {tapHaptic} from '../utils/haptics';
+
+const ROW_HEIGHT = 56;
 
 // Route name -> icon (focused / unfocused) + short label.
 const TAB_META = {
@@ -28,6 +32,39 @@ const TAB_META = {
   Budget: {on: 'chart-donut', off: 'chart-donut', label: 'Budget'},
   Settings: {on: 'cog', off: 'cog-outline', label: 'Settings'},
 };
+
+function TabItem({focused, meta, label, onPress, accessibilityLabel}) {
+  const scale = useSharedValue(focused ? 1.1 : 1);
+  const lift = useSharedValue(focused ? 1 : 0);
+
+  useEffect(() => {
+    scale.value = withSpring(focused ? 1.12 : 1, getSpring());
+    lift.value = withSpring(focused ? 1 : 0, getSpring());
+  }, [focused, scale, lift]);
+
+  const iconStyle = useAnimatedStyle(() => ({
+    transform: [{scale: scale.value}, {translateY: -2 * lift.value}],
+  }));
+
+  const tint = focused ? colors.accent : colors.textMuted;
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={focused ? {selected: true} : {}}
+      accessibilityLabel={accessibilityLabel || label}
+      onPress={onPress}
+      android_ripple={{color: colors.ripple, borderless: true, radius: 36}}
+      style={styles.tab}>
+      <Animated.View style={iconStyle}>
+        <Icon name={focused ? meta.on : meta.off} size={24} color={tint} />
+      </Animated.View>
+      <Text style={[styles.label, {color: tint}]} numberOfLines={1}>
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
 
 export default function TabBar({state, descriptors, navigation}) {
   const insets = useSafeAreaInsets();
@@ -43,82 +80,92 @@ export default function TabBar({state, descriptors, navigation}) {
     }
   }, [state.index, tabWidth, indicatorX]);
 
-  const indicatorStyle = useAnimatedStyle(() => ({
+  const pillStyle = useAnimatedStyle(() => ({
     transform: [{translateX: indicatorX.value}],
     width: tabWidth,
   }));
 
   return (
-    <View
-      style={[styles.container, {paddingBottom: Math.max(insets.bottom, 8)}]}
-      onLayout={e => setBarWidth(e.nativeEvent.layout.width)}>
-      {tabWidth > 0 ? (
-        <Animated.View style={[styles.indicatorWrap, indicatorStyle]}>
-          <View style={styles.indicatorPill} />
-        </Animated.View>
-      ) : null}
+    <View style={[styles.container, {paddingBottom: Math.max(insets.bottom, 10)}]}>
+      <View
+        style={styles.row}
+        onLayout={e => setBarWidth(e.nativeEvent.layout.width)}>
+        {tabWidth > 0 ? (
+          <Animated.View style={[styles.pillWrap, pillStyle]} pointerEvents="none">
+            <View style={[styles.pill, glowShadow(colors.accent, 0.45, 14)]} />
+          </Animated.View>
+        ) : null}
 
-      {state.routes.map((route, index) => {
-        const {options} = descriptors[route.key];
-        const focused = state.index === index;
-        const meta = TAB_META[route.name] || {
-          on: 'circle',
-          off: 'circle-outline',
-          label: route.name,
-        };
-        const tint = focused ? colors.accent : colors.textMuted;
+        {state.routes.map((route, index) => {
+          const {options} = descriptors[route.key];
+          const focused = state.index === index;
+          const meta = TAB_META[route.name] || {
+            on: 'circle',
+            off: 'circle-outline',
+            label: route.name,
+          };
 
-        const onPress = () => {
-          const event = navigation.emit({
-            type: 'tabPress',
-            target: route.key,
-            canPreventDefault: true,
-          });
-          if (!focused && !event.defaultPrevented) {
-            navigation.navigate(route.name);
-          }
-        };
+          const onPress = () => {
+            tapHaptic();
+            const event = navigation.emit({
+              type: 'tabPress',
+              target: route.key,
+              canPreventDefault: true,
+            });
+            if (!focused && !event.defaultPrevented) {
+              navigation.navigate(route.name);
+            }
+          };
 
-        return (
-          <Pressable
-            key={route.key}
-            accessibilityRole="button"
-            accessibilityState={focused ? {selected: true} : {}}
-            accessibilityLabel={options.tabBarAccessibilityLabel || meta.label}
-            onPress={onPress}
-            android_ripple={{color: colors.ripple, borderless: true, radius: 32}}
-            style={styles.tab}>
-            <Icon name={focused ? meta.on : meta.off} size={24} color={tint} />
-            <Text style={[styles.label, {color: tint}]} numberOfLines={1}>
-              {meta.label}
-            </Text>
-          </Pressable>
-        );
-      })}
+          return (
+            <TabItem
+              key={route.key}
+              focused={focused}
+              meta={meta}
+              label={meta.label}
+              onPress={onPress}
+              accessibilityLabel={options.tabBarAccessibilityLabel}
+            />
+          );
+        })}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
-    backgroundColor: colors.surface,
+    backgroundColor: colors.cardFrostElevated,
     borderTopWidth: 1,
-    borderTopColor: colors.border,
+    borderTopColor: colors.borderFrost,
     paddingTop: spacing.sm,
   },
-  tab: {flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 4},
-  label: {fontSize: 11, fontWeight: '700', marginTop: 3},
-  indicatorWrap: {
+  row: {
+    flexDirection: 'row',
+    height: ROW_HEIGHT,
+    alignItems: 'stretch',
+  },
+  tab: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 6,
+  },
+  label: {fontSize: 11, fontWeight: '700', marginTop: 4},
+  pillWrap: {
     position: 'absolute',
     top: 0,
     left: 0,
+    height: ROW_HEIGHT,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  indicatorPill: {
-    width: 36,
-    height: 3,
+  pill: {
+    width: '58%',
+    height: ROW_HEIGHT - 12,
     borderRadius: radius.pill,
-    backgroundColor: colors.accent,
+    backgroundColor: colors.accentDim,
+    borderWidth: 1,
+    borderColor: 'rgba(99,102,241,0.45)',
   },
 });
