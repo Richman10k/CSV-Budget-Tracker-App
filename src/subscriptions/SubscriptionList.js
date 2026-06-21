@@ -3,8 +3,15 @@
  * Cancelled / Trial) with a card per subscription showing cost, next due date,
  * and any risk flags.
  */
-import React, {useMemo} from 'react';
+import React, {useMemo, useEffect} from 'react';
 import {View, Text, FlatList, StyleSheet} from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import Card from '../components/Card';
@@ -22,10 +29,12 @@ import {formatShortDate} from '../utils/formatDate';
 import {monthlyEquivalent} from '../utils/detectRecurring';
 import {describeFlag} from './SubscriptionDetector';
 
+// Order matches the add/edit popup's status segmented control
+// (SubscriptionFormModal STATUSES: active, trial, cancelled).
 const STATUS_TABS = [
   {key: 'active', label: 'Active'},
-  {key: 'cancelled', label: 'Cancelled'},
   {key: 'trial', label: 'Trial'},
+  {key: 'cancelled', label: 'Cancelled'},
 ];
 
 function StatusTab({label, count, active, onPress}) {
@@ -41,11 +50,34 @@ function StatusTab({label, count, active, onPress}) {
   );
 }
 
+/** Pulsing red badge highlighting a detected price increase (>10%). */
+function PriceChangeBadge({pct}) {
+  const pulse = useSharedValue(1);
+  useEffect(() => {
+    pulse.value = withRepeat(
+      withSequence(
+        withTiming(0.45, {duration: 700}),
+        withTiming(1, {duration: 700}),
+      ),
+      -1,
+      false,
+    );
+  }, [pulse]);
+  const style = useAnimatedStyle(() => ({opacity: pulse.value}));
+  return (
+    <Animated.View style={[styles.priceBadge, style]}>
+      <Icon name="arrow-up-bold" size={12} color={colors.white} />
+      <Text style={styles.priceBadgeText}>{pct}%</Text>
+    </Animated.View>
+  );
+}
+
 function SubscriptionCard({sub, currency, onPress}) {
   const monthly = monthlyEquivalent(sub.amount, sub.interval);
   const tint = subscriptionStatusColor(sub.status);
   return (
     <Card onPress={onPress} style={styles.card}>
+      {sub.priceChange ? <PriceChangeBadge pct={sub.priceChange.pct} /> : null}
       <View style={styles.cardRow}>
           <View style={[styles.logo, {backgroundColor: `${tint}22`}]}>
             <Text style={[styles.logoText, {color: tint}]}>
@@ -170,6 +202,19 @@ const styles = StyleSheet.create({
   tabLabelActive: {color: colors.black},
   list: {paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl, flexGrow: 1},
   card: {marginBottom: spacing.md},
+  priceBadge: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    zIndex: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.expense,
+    borderRadius: radius.pill,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  priceBadgeText: {color: colors.white, fontWeight: '800', fontSize: 11, marginLeft: 1},
   cardRow: {flexDirection: 'row', alignItems: 'center'},
   logo: {
     width: 46,

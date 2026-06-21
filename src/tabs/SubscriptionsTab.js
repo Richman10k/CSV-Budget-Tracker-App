@@ -105,19 +105,29 @@ export default function SubscriptionsTab({navigation}) {
           />
           <Stat label="Due soon" value={String(subscriptionSummary.dueSoon)} />
         </View>
-        <PressableScale
-          onPress={rerunDetection}
-          scaleTo={0.96}
-          style={styles.rescan}>
-          <Icon
-            name={busy ? 'loading' : 'magnify-scan'}
-            size={18}
-            color={colors.accent}
-          />
-          <Text style={styles.rescanText}>
-            {busy ? 'Scanning…' : 'Rescan transactions'}
-          </Text>
-        </PressableScale>
+        <View style={styles.actionsRow}>
+          <PressableScale
+            onPress={rerunDetection}
+            scaleTo={0.96}
+            style={styles.actionBtn}>
+            <Icon
+              name={busy ? 'loading' : 'magnify-scan'}
+              size={18}
+              color={colors.accent}
+            />
+            <Text style={styles.rescanText}>
+              {busy ? 'Scanning…' : 'Rescan'}
+            </Text>
+          </PressableScale>
+          <View style={styles.actionDivider} />
+          <PressableScale
+            onPress={() => navigation.navigate('CashFlow')}
+            scaleTo={0.96}
+            style={styles.actionBtn}>
+            <Icon name="calendar-clock" size={18} color={colors.accent} />
+            <Text style={styles.rescanText}>Cash flow</Text>
+          </PressableScale>
+        </View>
       </Card>
 
       <SubscriptionList
@@ -148,14 +158,20 @@ const styles = StyleSheet.create({
   stat: {alignItems: 'center', flex: 1},
   statValue: {fontSize: 18, fontWeight: '800', color: colors.text},
   statLabel: {...typography.caption, marginTop: 2},
-  rescan: {
+  actionsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     marginTop: spacing.lg,
     paddingTop: spacing.md,
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },
+  actionBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionDivider: {width: 1, alignSelf: 'stretch', backgroundColor: colors.border},
   rescanText: {...typography.label, color: colors.accent, marginLeft: spacing.sm},
 });

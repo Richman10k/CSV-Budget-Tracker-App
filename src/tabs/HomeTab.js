@@ -3,7 +3,7 @@
  * top spending categories, and recent transactions. Shows an onboarding empty
  * state until the first CSV is imported.
  */
-import React, {useCallback} from 'react';
+import React, {useCallback, useMemo} from 'react';
 import {View, Text, StyleSheet, Alert} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import Animated, {
@@ -20,6 +20,8 @@ import TransactionRow from '../components/TransactionRow';
 import MonthSwitcher from '../components/MonthSwitcher';
 import SpendingOverview from '../budget/SpendingOverview';
 import {CategoryBars} from '../budget/CategoryChart';
+import InsightsSection from '../insights/InsightsSection';
+import {generateInsights, monthlySpendingSeries} from '../insights/generateInsights';
 import {colors, spacing, typography, radius} from '../theme/theme';
 import {formatCurrency} from '../utils/formatCurrency';
 
@@ -61,6 +63,7 @@ function SectionHeader({title, actionLabel, onAction}) {
 export default function HomeTab({navigation}) {
   const {
     transactions,
+    subscriptions,
     monthData,
     selectedMonth,
     setSelectedMonth,
@@ -68,6 +71,7 @@ export default function HomeTab({navigation}) {
     budgets,
     settings,
     resetActivity,
+    dataMonthRange,
   } = useAppData();
 
   const handleImport = useCsvImport();
@@ -79,7 +83,20 @@ export default function HomeTab({navigation}) {
   const currency = settings.currency || 'USD';
   const totalBudget = budgets.TOTAL || 0;
   const topCategories = monthData.categories.slice(0, 5);
-  const recent = transactions.slice(0, 6);
+  // Recent list is scoped to the selected month so switching months never shows
+  // transactions that belong to a different month.
+  const recent = monthData.transactions.slice(0, 6);
+
+  const insights = useMemo(
+    () =>
+      generateInsights(transactions, subscriptions, {
+        selectedMonth,
+        budgets,
+        fmt: n => formatCurrency(n, currency),
+      }),
+    [transactions, subscriptions, selectedMonth, budgets, currency],
+  );
+  const series = useMemo(() => monthlySpendingSeries(transactions, 6), [transactions]);
 
   if (transactions.length === 0) {
     return (
@@ -116,6 +133,8 @@ export default function HomeTab({navigation}) {
           year={selectedMonth.year}
           month={selectedMonth.month}
           onChange={setSelectedMonth}
+          min={dataMonthRange?.min}
+          max={dataMonthRange?.max}
         />
 
         <View style={styles.gap} />
@@ -152,6 +171,14 @@ export default function HomeTab({navigation}) {
           </View>
         </Card>
 
+        {insights.length > 0 ? (
+          <View>
+            <View style={styles.gap} />
+            <SectionHeader title="Insights" />
+            <InsightsSection insights={insights} series={series} currency={currency} />
+          </View>
+        ) : null}
+
         {topCategories.length > 0 ? (
           <View>
             <View style={styles.gap} />
@@ -168,13 +195,17 @@ export default function HomeTab({navigation}) {
           actionLabel="See all"
           onAction={() => navigation.navigate('Transactions')}
         />
-        <Card padded={false}>
-          {recent.map((t, i) => (
-            <View key={t.id}>
-              <TransactionRow transaction={t} currency={currency} />
-              {i < recent.length - 1 ? <View style={styles.divider} /> : null}
-            </View>
-          ))}
+        <Card padded={recent.length === 0}>
+          {recent.length === 0 ? (
+            <Text style={styles.emptyMonth}>No transactions this month.</Text>
+          ) : (
+            recent.map((t, i) => (
+              <View key={t.id}>
+                <TransactionRow transaction={t} currency={currency} />
+                {i < recent.length - 1 ? <View style={styles.divider} /> : null}
+              </View>
+            ))
+          )}
         </Card>
         <View style={styles.bottomPad} />
       </Animated.ScrollView>
@@ -195,6 +226,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {...typography.heading},
   action: {...typography.label, color: colors.accent},
+  emptyMonth: {...typography.label, color: colors.textSecondary, textAlign: 'center'},
   subRow: {flexDirection: 'row', alignItems: 'center'},
   subIcon: {
     width: 44,

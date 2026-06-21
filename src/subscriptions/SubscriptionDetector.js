@@ -6,20 +6,24 @@
 import {detectRecurring, monthlyEquivalent} from '../utils/detectRecurring';
 import TransactionModel from '../data/TransactionModel';
 import SubscriptionModel from '../data/SubscriptionModel';
+import RecurringPatternModel from '../data/RecurringPatternModel';
 
 /** Analyze a provided transaction list into subscription candidates. */
-export function analyze(transactions) {
-  return detectRecurring(transactions);
+export function analyze(transactions, options) {
+  return detectRecurring(transactions, options);
 }
 
 /**
- * Load all transactions, detect recurring charges, and reconcile them into the
- * subscriptions table (preserving user edits/cancellations). Returns the list
- * of candidates that were detected.
+ * Load all transactions, detect recurring charges (excluding any merchants the
+ * user has chosen to ignore), and reconcile them into the subscriptions table
+ * (preserving user edits/cancellations). Returns the detected candidates.
  */
 export async function runDetection() {
-  const transactions = await TransactionModel.getAll();
-  const candidates = detectRecurring(transactions);
+  const [transactions, ignoredKeys] = await Promise.all([
+    TransactionModel.getAll(),
+    RecurringPatternModel.getIgnoredKeys(),
+  ]);
+  const candidates = detectRecurring(transactions, {ignoredKeys});
   await SubscriptionModel.syncDetected(candidates);
   return candidates;
 }

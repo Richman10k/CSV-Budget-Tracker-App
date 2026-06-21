@@ -31,6 +31,15 @@ export async function decodeRow(row) {
   } catch (e) {
     flags = [];
   }
+  let priceChange = null;
+  if (row.enc_price_change) {
+    try {
+      const json = await decrypt(row.enc_price_change);
+      priceChange = json ? JSON.parse(json) : null;
+    } catch (e) {
+      priceChange = null;
+    }
+  }
   return {
     id: row.id,
     name,
@@ -43,6 +52,7 @@ export async function decodeRow(row) {
     lastCharge: row.last_charge || null,
     notes,
     flags,
+    priceChange,
     autoDetected: !!row.auto_detected,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -92,11 +102,15 @@ export async function insert(sub) {
     encrypt(String(Number(sub.amount || 0).toFixed(2))),
     encrypt(sanitizeText(sub.notes || '')),
   ]);
+  const encPriceChange = sub.priceChange
+    ? await encrypt(JSON.stringify(sub.priceChange))
+    : null;
   const result = await run(
     `INSERT INTO subscriptions
        (enc_name, merchant_key, enc_amount, interval, status, category,
-        next_due, last_charge, enc_notes, flags, auto_detected, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+        next_due, last_charge, enc_notes, flags, enc_price_change,
+        auto_detected, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
     [
       encName,
       sanitizeText(sub.merchantKey || '', 128),
@@ -108,6 +122,7 @@ export async function insert(sub) {
       sub.lastCharge || null,
       encNotes,
       JSON.stringify(sub.flags || []),
+      encPriceChange,
       sub.autoDetected ? 1 : 0,
       now,
       now,
@@ -153,6 +168,12 @@ export async function update(id, patch) {
     sets.push('flags = ?');
     params.push(JSON.stringify(patch.flags));
   }
+  if (patch.priceChange !== undefined) {
+    sets.push('enc_price_change = ?');
+    params.push(
+      patch.priceChange ? await encrypt(JSON.stringify(patch.priceChange)) : null,
+    );
+  }
   sets.push('updated_at = ?');
   params.push(Date.now());
   params.push(id);
@@ -193,6 +214,7 @@ export async function syncDetected(detected) {
         lastCharge: d.lastCharge,
         category: d.category,
         flags: d.flags,
+        priceChange: d.priceChange || null,
       });
     } else {
       await insert({...d, autoDetected: true, status: 'active'});

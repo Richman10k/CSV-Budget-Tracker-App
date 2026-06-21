@@ -20,13 +20,18 @@ import {AppState} from 'react-native';
 import TransactionModel from '../data/TransactionModel';
 import SubscriptionModel from '../data/SubscriptionModel';
 import BudgetModel from '../data/BudgetModel';
+import RecurringPatternModel from '../data/RecurringPatternModel';
 import {wipeDatabase} from '../data/Database';
 import {getSettings, saveSettings} from '../encryption/SecureStorage';
 import {clearKeyCache, neutralizeFormula} from '../encryption/Crypto';
 import {pickCsvFile, saveCsvFile} from '../csv/FileImporter';
 import {parseCSV} from '../csv/CSVParser';
 import {runDetection, summarizeSubscriptions} from '../subscriptions/SubscriptionDetector';
-import {formatISODate} from '../utils/formatDate';
+import {runHealthCheck, fixHealth} from '../automations/healthCheck';
+import {generateInsights} from '../insights/generateInsights';
+import {buildReportHtml} from '../insights/monthlyReport';
+import {formatCurrency} from '../utils/formatCurrency';
+import {formatISODate, formatMonthYear, formatShortDate} from '../utils/formatDate';
 
 const AppDataContext = createContext(null);
 
@@ -74,6 +79,7 @@ export function AppDataProvider({children}) {
   const [subscriptions, setSubscriptions] = useState([]);
   const [budgets, setBudgets] = useState({});
   const [busy, setBusy] = useState(null); // label for in-flight long ops
+  const [health, setHealth] = useState(null); // last data-health report
 
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState({
@@ -162,6 +168,10 @@ export function AppDataProvider({children}) {
     unlockedRef.current = true;
     await refreshAll(true);
     resetActivity();
+    // Background, non-blocking data-health check after the UI is ready.
+    runHealthCheck()
+      .then(setHealth)
+      .catch(() => {});
   }, [refreshAll, resetActivity]);
 
   // Lock when the app goes to the background (so closing + reopening always
@@ -275,9 +285,35 @@ export function AppDataProvider({children}) {
     [refreshAll],
   );
 
+  // "Ignore as recurring": record the merchant pattern so detection excludes it
+  // going forward, then drop the current subscription entry.
+  const ignoreAsRecurring = useCallback(
+    async sub => {
+      await RecurringPatternModel.ignore({
+        merchantKey: sub.merchantKey,
+        amount: sub.amount,
+        interval: sub.interval,
+      });
+      await SubscriptionModel.remove(sub.id);
+      await refreshAll();
+    },
+    [refreshAll],
+  );
+
   const setBudget = useCallback(
     async (category, limit) => {
       await BudgetModel.setLimit(category, limit);
+      await refreshAll();
+    },
+    [refreshAll],
+  );
+
+  const applyBudgets = useCallback(
+    async entries => {
+      if (!entries || entries.length === 0) {
+        return;
+      }
+      await BudgetModel.setLimitMany(entries);
       await refreshAll();
     },
     [refreshAll],
@@ -311,6 +347,23 @@ export function AppDataProvider({children}) {
     await wipeDatabase();
     await refreshAll();
   }, [refreshAll]);
+
+  const checkHealth = useCallback(async () => {
+    const report = await runHealthCheck();
+    setHealth(report);
+    return report;
+  }, []);
+
+  const repairData = useCallback(async () => {
+    setBusy('Optimizing…');
+    try {
+      const report = await fixHealth();
+      setHealth(report);
+      return report;
+    } finally {
+      setBusy(null);
+    }
+  }, []);
 
   const updateSettings = useCallback(async patch => {
     const merged = await saveSettings(patch);
@@ -351,12 +404,74 @@ export function AppDataProvider({children}) {
     [subscriptions],
   );
 
+  // Earliest/latest month that actually has transaction data, so the month
+  // switcher can stop at the edges of the imported CSV instead of wandering
+  // into empty months. null when there's no data.
+  const dataMonthRange = useMemo(() => {
+    if (transactions.length === 0) {
+      return null;
+    }
+    let min = Infinity;
+    let max = -Infinity;
+    transactions.forEach(t => {
+      if (t.date < min) {
+        min = t.date;
+      }
+      if (t.date > max) {
+        max = t.date;
+      }
+    });
+    const lo = new Date(min);
+    const hi = new Date(max);
+    return {
+      min: {year: lo.getFullYear(), month: lo.getMonth()},
+      max: {year: hi.getFullYear(), month: hi.getMonth()},
+    };
+  }, [transactions]);
+
+  /**
+   * Build a shareable HTML report for the selected month (summary + insights +
+   * top categories + a transaction excerpt) and save it to the device. Returns
+   * the saved path. Defined here so it can read the derived monthData.
+   */
+  const exportMonthlyReport = useCallback(async () => {
+    const currency = settingsRef.current.currency || 'USD';
+    const fmt = n => formatCurrency(n, currency);
+    const monthLabel = formatMonthYear(
+      new Date(selectedMonth.year, selectedMonth.month, 1).getTime(),
+    );
+    const insights = generateInsights(transactions, subscriptions, {
+      selectedMonth,
+      budgets,
+      fmt,
+    });
+    const html = buildReportHtml({
+      monthLabel,
+      fmt,
+      spending: monthData.spending,
+      income: monthData.income,
+      categories: monthData.categories,
+      transactions: monthData.transactions.slice(0, 40).map(t => ({
+        date: formatShortDate(t.date),
+        description: t.description,
+        amount: t.amount,
+        type: t.type,
+      })),
+      insights,
+    });
+    const fileName = `budget-report-${selectedMonth.year}-${String(
+      selectedMonth.month + 1,
+    ).padStart(2, '0')}.html`;
+    return saveCsvFile(fileName, html);
+  }, [selectedMonth, transactions, subscriptions, budgets, monthData]);
+
   const value = {
     // state
     ready,
     unlocked,
     settings,
     busy,
+    health,
     transactions,
     subscriptions,
     budgets,
@@ -365,6 +480,7 @@ export function AppDataProvider({children}) {
     // derived
     monthData,
     subscriptionSummary,
+    dataMonthRange,
     // lifecycle
     unlock,
     lock,
@@ -378,11 +494,16 @@ export function AppDataProvider({children}) {
     updateSubscription,
     setSubscriptionStatus,
     deleteSubscription,
+    ignoreAsRecurring,
     setBudget,
+    applyBudgets,
     removeBudget,
     rerunDetection,
     exportData,
+    exportMonthlyReport,
     clearAllData,
+    checkHealth,
+    repairData,
     updateSettings,
   };
 

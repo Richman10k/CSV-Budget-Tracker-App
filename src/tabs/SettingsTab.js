@@ -13,6 +13,7 @@ import {
   Modal,
   StyleSheet,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import Animated, {SlideInDown} from 'react-native-reanimated';
@@ -67,10 +68,15 @@ export default function SettingsTab() {
     settings,
     updateSettings,
     exportData,
+    exportMonthlyReport,
     clearAllData,
     rerunDetection,
     lock,
     transactions,
+    health,
+    checkHealth,
+    repairData,
+    busy,
   } = useAppData();
   const handleImport = useCsvImport();
   const [changingPin, setChangingPin] = useState(false);
@@ -91,6 +97,22 @@ export default function SettingsTab() {
       Alert.alert('Exported', `Saved to:\n${path}`);
     } catch (e) {
       Alert.alert('Export failed', e.message || 'Could not export data.');
+    }
+  };
+
+  const onReport = async () => {
+    if (transactions.length === 0) {
+      Alert.alert('Nothing to report', 'Import some transactions first.');
+      return;
+    }
+    try {
+      const path = await exportMonthlyReport();
+      Alert.alert(
+        'Report saved',
+        `An HTML report was saved to:\n${path}\n\nOpen it in a browser to view or print to PDF.`,
+      );
+    } catch (e) {
+      Alert.alert('Report failed', e.message || 'Could not generate the report.');
     }
   };
 
@@ -192,6 +214,14 @@ export default function SettingsTab() {
           />
           <View style={styles.divider} />
           <SettingRow
+            icon="file-chart"
+            label="Monthly report"
+            subtitle="Save an HTML summary of the selected month"
+            onPress={onReport}
+            right={<Icon name="chevron-right" size={22} color={colors.textMuted} />}
+          />
+          <View style={styles.divider} />
+          <SettingRow
             icon="magnify-scan"
             label="Rescan subscriptions"
             subtitle="Re-detect recurring charges"
@@ -205,6 +235,60 @@ export default function SettingsTab() {
             subtitle="Delete everything on this device"
             onPress={onClear}
             danger
+          />
+        </Card>
+
+        <SectionLabel>Maintenance</SectionLabel>
+        <Card padded={false}>
+          <SettingRow
+            icon={
+              !health
+                ? 'database-search'
+                : health.ok
+                ? 'check-circle'
+                : 'alert-circle'
+            }
+            label="Data health"
+            subtitle={
+              !health
+                ? 'Tap to run a health check'
+                : health.ok
+                ? 'No issues found'
+                : [
+                    health.integrityOk ? null : 'integrity errors',
+                    health.suspiciousDates > 0
+                      ? `${health.suspiciousDates} suspicious date${
+                          health.suspiciousDates > 1 ? 's' : ''
+                        }`
+                      : null,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')
+            }
+            onPress={checkHealth}
+            right={<Text style={styles.value}>Check</Text>}
+          />
+          <View style={styles.divider} />
+          <SettingRow
+            icon="broom"
+            label="Optimize & fix"
+            subtitle="Reclaim space and tidy the database"
+            onPress={async () => {
+              const report = await repairData();
+              Alert.alert(
+                'Maintenance complete',
+                report.ok
+                  ? 'Database optimized — no issues remain.'
+                  : 'Optimized. Some items still need a look (see Data health).',
+              );
+            }}
+            right={
+              busy ? (
+                <ActivityIndicator color={colors.accent} />
+              ) : (
+                <Icon name="chevron-right" size={22} color={colors.textMuted} />
+              )
+            }
           />
         </Card>
 

@@ -102,12 +102,20 @@ export function monthlyEquivalent(amount, interval) {
   }
 }
 
+// Flag a price increase only when the newest charge is more than this fraction
+// above the historical average for the same merchant (spec: >10%).
+const PRICE_INCREASE_THRESHOLD = 0.1;
+
 /**
  * Detect subscription candidates from transactions.
  * @param {Array} transactions decrypted transactions
+ * @param {Object} [options]
+ * @param {Set<string>} [options.ignoredKeys] merchant keys to exclude (user
+ *        marked "ignore as recurring")
  * @returns {Array} candidate subscriptions
  */
-export function detectRecurring(transactions) {
+export function detectRecurring(transactions, options = {}) {
+  const ignoredKeys = options.ignoredKeys || null;
   // Only outgoing charges can be subscriptions.
   const charges = (transactions || []).filter(t => t.type === 'expense');
 
@@ -117,6 +125,9 @@ export function detectRecurring(transactions) {
     const key = normalizeMerchant(tx.merchant || tx.description);
     if (!key) {
       continue;
+    }
+    if (ignoredKeys && ignoredKeys.has(key)) {
+      continue; // user excluded this merchant from detection
     }
     if (!groups.has(key)) {
       groups.set(key, []);
@@ -160,10 +171,21 @@ export function detectRecurring(transactions) {
     }
 
     const amounts = sorted.map(t => Math.abs(t.amount));
-    const firstAmount = amounts[0];
     const lastAmount = amounts[amounts.length - 1];
-    if (lastAmount - firstAmount > 0.01) {
+
+    // Price-change detection: compare the newest charge to the average of the
+    // prior charges. Only flag increases above the threshold (>10%).
+    const prior = amounts.slice(0, -1);
+    const priorAvg =
+      prior.length > 0 ? prior.reduce((a, b) => a + b, 0) / prior.length : lastAmount;
+    let priceChange = null;
+    if (priorAvg > 0 && (lastAmount - priorAvg) / priorAvg > PRICE_INCREASE_THRESHOLD) {
       flags.add(FLAGS.PRICE_INCREASE);
+      priceChange = {
+        previous: Math.round(priorAvg * 100) / 100,
+        current: Math.round(lastAmount * 100) / 100,
+        pct: Math.round(((lastAmount - priorAvg) / priorAvg) * 100),
+      };
     }
 
     if (!KNOWN_MERCHANTS.has(key) && ![...KNOWN_MERCHANTS].some(m => key.includes(m))) {
@@ -184,6 +206,7 @@ export function detectRecurring(transactions) {
       occurrences: sorted.length,
       category: sorted[sorted.length - 1].category || 'Subscriptions',
       flags: [...flags],
+      priceChange,
     });
   }
 

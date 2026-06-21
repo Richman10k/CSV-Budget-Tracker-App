@@ -18,7 +18,8 @@ SQLite.enablePromise(true);
 SQLite.DEBUG(false);
 
 const DB_NAME = 'csvbudget.db';
-const SCHEMA_VERSION = 1;
+// Bump this and add a MIGRATIONS entry whenever the schema changes.
+const SCHEMA_VERSION = 2;
 
 let dbInstance = null;
 let openPromise = null;
@@ -78,7 +79,51 @@ const INDEXES = [
   'CREATE INDEX IF NOT EXISTS idx_sub_status ON subscriptions(status);',
 ];
 
-async function createSchema(db) {
+/** True if `table` already has a column named `column`. */
+async function hasColumn(db, table, column) {
+  const [res] = await db.executeSql(`PRAGMA table_info(${table});`);
+  for (let i = 0; i < res.rows.length; i++) {
+    if (res.rows.item(i).name === column) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/** ALTER TABLE ADD COLUMN, but only if the column isn't already present. */
+async function addColumn(db, table, column, type) {
+  if (!(await hasColumn(db, table, column))) {
+    await db.executeSql(`ALTER TABLE ${table} ADD COLUMN ${column} ${type};`);
+  }
+}
+
+/**
+ * Forward-only migrations keyed by the schema version they bring the DB UP TO.
+ * Each runs exactly once; they must be idempotent (guarded) so a retry is safe.
+ * All new sensitive values are encrypted by the model layer (enc_* columns).
+ */
+const MIGRATIONS = {
+  // v2 — Automation & Insights: subscription price-change details + the
+  // "ignore as recurring" pattern store.
+  2: async db => {
+    await addColumn(db, 'subscriptions', 'enc_price_change', 'TEXT');
+    await db.executeSql(`
+      CREATE TABLE IF NOT EXISTS recurring_patterns (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        merchant_key TEXT NOT NULL,
+        enc_amount TEXT,
+        interval TEXT,
+        action TEXT NOT NULL DEFAULT 'ignore',
+        created_at INTEGER NOT NULL
+      );`);
+    await db.executeSql(
+      'CREATE INDEX IF NOT EXISTS idx_rp_merchant ON recurring_patterns(merchant_key);',
+    );
+  },
+};
+
+/** Create the base (v1) tables + indexes. Idempotent. */
+async function createBaseSchema(db) {
   await db.executeSql(CREATE_META);
   await db.executeSql(CREATE_TRANSACTIONS);
   await db.executeSql(CREATE_SUBSCRIPTIONS);
@@ -86,10 +131,38 @@ async function createSchema(db) {
   for (const stmt of INDEXES) {
     await db.executeSql(stmt);
   }
-  await db.executeSql(
-    'INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?);',
-    ['schema_version', String(SCHEMA_VERSION)],
+}
+
+async function readVersion(db) {
+  const [res] = await db.executeSql(
+    'SELECT value FROM meta WHERE key = ?;',
+    ['schema_version'],
   );
+  if (res.rows.length === 0) {
+    return null;
+  }
+  return parseInt(res.rows.item(0).value, 10) || null;
+}
+
+/**
+ * Bring the database up to SCHEMA_VERSION: create base tables, then apply any
+ * pending forward migrations in order. A brand-new DB starts at v1 (the base
+ * schema) and then runs 2..N.
+ */
+async function createSchema(db) {
+  await createBaseSchema(db);
+  let current = (await readVersion(db)) || 1; // null => fresh DB == base v1
+  for (let v = current + 1; v <= SCHEMA_VERSION; v++) {
+    const migrate = MIGRATIONS[v];
+    if (migrate) {
+      await migrate(db);
+    }
+    current = v;
+  }
+  await db.executeSql('INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?);', [
+    'schema_version',
+    String(SCHEMA_VERSION),
+  ]);
 }
 
 /**
@@ -158,7 +231,8 @@ export async function wipeDatabase() {
     'DELETE FROM transactions;',
     'DELETE FROM subscriptions;',
     'DELETE FROM budgets;',
-    "DELETE FROM sqlite_sequence WHERE name IN ('transactions','subscriptions','budgets');",
+    'DELETE FROM recurring_patterns;',
+    "DELETE FROM sqlite_sequence WHERE name IN ('transactions','subscriptions','budgets','recurring_patterns');",
   ]);
 }
 

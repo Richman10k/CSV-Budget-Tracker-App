@@ -14,16 +14,18 @@ import SubscriptionsTab from '../tabs/SubscriptionsTab';
 import BudgetTab from '../tabs/BudgetTab';
 import SettingsTab from '../tabs/SettingsTab';
 import SubscriptionDetail from '../subscriptions/SubscriptionDetail';
+import CashFlowScreen from '../automations/CashFlowScreen';
 
 const Tab = createBottomTabNavigator();
 const SubStack = createStackNavigator();
 
-/** Subscriptions tab = list -> detail stack. */
+/** Subscriptions tab = list -> detail / cash-flow stack. */
 function SubscriptionsStack() {
   return (
     <SubStack.Navigator screenOptions={{headerShown: false}}>
       <SubStack.Screen name="SubscriptionsHome" component={SubscriptionsTab} />
       <SubStack.Screen name="SubscriptionDetail" component={SubscriptionDetail} />
+      <SubStack.Screen name="CashFlow" component={CashFlowScreen} />
     </SubStack.Navigator>
   );
 }

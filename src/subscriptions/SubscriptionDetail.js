@@ -36,6 +36,7 @@ export default function SubscriptionDetail({route, navigation}) {
     updateSubscription,
     setSubscriptionStatus,
     deleteSubscription,
+    ignoreAsRecurring,
   } = useAppData();
   const [editing, setEditing] = useState(false);
   const currency = settings.currency || 'USD';
@@ -64,6 +65,23 @@ export default function SubscriptionDetail({route, navigation}) {
         },
       },
     ]);
+  };
+
+  const confirmIgnore = () => {
+    Alert.alert(
+      'Ignore as recurring',
+      `Stop detecting "${sub.name}" as a subscription? Future imports won't flag it.`,
+      [
+        {text: 'Cancel', style: 'cancel'},
+        {
+          text: 'Ignore',
+          onPress: async () => {
+            await ignoreAsRecurring(sub);
+            navigation.goBack();
+          },
+        },
+      ],
+    );
   };
 
   return (
@@ -108,6 +126,24 @@ export default function SubscriptionDetail({route, navigation}) {
           />
         </Card>
 
+        {sub.priceChange ? (
+          <Card style={[styles.card, styles.priceCard]}>
+            <Text style={styles.priceTitle}>
+              <Icon name="trending-up" size={16} color={colors.expense} /> Price
+              increased {sub.priceChange.pct}%
+            </Text>
+            <View style={styles.priceRow}>
+              <Text style={styles.priceWas}>
+                was {formatCurrency(sub.priceChange.previous, currency)}
+              </Text>
+              <Icon name="arrow-right" size={16} color={colors.textMuted} />
+              <Text style={styles.priceNow}>
+                now {formatCurrency(sub.priceChange.current, currency)}
+              </Text>
+            </View>
+          </Card>
+        ) : null}
+
         {sub.flags && sub.flags.length > 0 ? (
           <Card style={[styles.card, styles.flagCard]}>
             <Text style={styles.flagsTitle}>
@@ -138,6 +174,16 @@ export default function SubscriptionDetail({route, navigation}) {
           }
           style={styles.actionBtn}
         />
+        {sub.autoDetected || sub.merchantKey ? (
+          <Button
+            label="Ignore as recurring"
+            icon="eye-off"
+            variant="secondary"
+            fullWidth
+            onPress={confirmIgnore}
+            style={styles.actionBtn}
+          />
+        ) : null}
         <Button
           label="Delete subscription"
           icon="trash-can"
@@ -200,6 +246,11 @@ const styles = StyleSheet.create({
   },
   infoLabel: {...typography.label},
   infoValue: {...typography.body, fontWeight: '600'},
+  priceCard: {borderColor: colors.expense},
+  priceTitle: {...typography.label, color: colors.expense, marginBottom: spacing.sm},
+  priceRow: {flexDirection: 'row', alignItems: 'center'},
+  priceWas: {...typography.body, color: colors.textSecondary, marginRight: spacing.sm},
+  priceNow: {...typography.body, color: colors.text, fontWeight: '700', marginLeft: spacing.sm},
   flagCard: {borderColor: colors.warning},
   flagsTitle: {...typography.label, color: colors.warning, marginBottom: spacing.sm},
   flagLine: {...typography.body, color: colors.textSecondary, marginTop: 2},

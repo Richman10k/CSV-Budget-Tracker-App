@@ -49,6 +49,18 @@ export async function setLimit(category, limit) {
   );
 }
 
+/**
+ * Upsert many limits at once (used by Accept-all budget suggestions).
+ * @param {Array<[string, number]>} entries [category, limit] pairs
+ */
+export async function setLimitMany(entries = []) {
+  for (const [category, limit] of entries) {
+    // Sequential awaits keep each value encrypted before it is written; the set
+    // is small (one row per category) so this stays well under a frame budget.
+    await setLimit(category, limit);
+  }
+}
+
 /** Remove a category budget. */
 export async function remove(category) {
   await run('DELETE FROM budgets WHERE category = ?;', [category]);
@@ -65,6 +77,7 @@ export default {
   getAll,
   getMap,
   setLimit,
+  setLimitMany,
   remove,
   getTotalLimit,
 };
