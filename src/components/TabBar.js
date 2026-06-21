@@ -2,8 +2,9 @@
  * TabBar.js — custom frosted, pill-style bottom navigation for React Navigation.
  *
  * A floating glass bar with a glowing indigo pill that springs under the focused
- * tab, focused-icon scale-up, and a subtle haptic tick on tap. All motion runs
- * on the UI thread (Reanimated) so it stays smooth up to 120fps.
+ * tab and a focused-icon scale-up. All motion runs on the UI thread (Reanimated)
+ * so it stays smooth up to 120fps. (Haptics are a no-op — the app ships with no
+ * permissions; see utils/haptics.)
  */
 import React, {useState, useEffect} from 'react';
 import {View, Text, Pressable, StyleSheet} from 'react-native';

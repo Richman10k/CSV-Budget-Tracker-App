@@ -32,12 +32,13 @@ export function usePressScale(scaleTo = 0.96) {
 
   const onPressIn = useCallback(() => {
     scale.value = withSpring(scaleTo, getSpring());
-    opacity.value = withTiming(0.85, {duration: 80});
+    // Subtle depress only — a heavy opacity drop reads as a cheap "grey-out".
+    opacity.value = withTiming(0.96, {duration: 90});
   }, [scale, opacity, scaleTo]);
 
   const onPressOut = useCallback(() => {
     scale.value = withSpring(1, getSpring());
-    opacity.value = withTiming(1, {duration: 120});
+    opacity.value = withTiming(1, {duration: 160});
   }, [scale, opacity]);
 
   const animatedStyle = useAnimatedStyle(() => ({

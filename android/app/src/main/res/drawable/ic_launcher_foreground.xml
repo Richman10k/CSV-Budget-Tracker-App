@@ -1,28 +1,46 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Adaptive icon foreground: three ascending rounded bars on a baseline,
-     centered within the adaptive-icon safe zone. Reads as "budget / spending". -->
+<!-- Adaptive icon foreground: a rising area + line chart with an up-and-right
+     arrow and an origin node. Reads instantly as "budget / growth", centered in
+     the adaptive-icon safe zone. Pure white so it also works as a monochrome
+     (themed) icon. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- shortest bar -->
+
+    <!-- Soft filled area under the curve (glass body). -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M26,62 Q26,56 32,56 L34,56 Q40,56 40,62 L40,80 L26,80 Z" />
-    <!-- middle bar -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M47,50 Q47,44 53,44 L55,44 Q61,44 61,50 L61,80 L47,80 Z" />
-    <!-- tallest bar -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M68,36 Q68,30 74,30 L76,30 Q82,30 82,36 L82,80 L68,80 Z" />
-    <!-- baseline -->
+        android:fillAlpha="0.20"
+        android:pathData="M28,70 L46,58 L62,64 L82,36 L82,80 L28,80 Z" />
+
+    <!-- Crisp baseline. -->
     <path
         android:strokeColor="#FFFFFF"
-        android:strokeWidth="4"
+        android:strokeAlpha="0.45"
+        android:strokeWidth="3.5"
         android:strokeLineCap="round"
-        android:strokeAlpha="0.55"
-        android:pathData="M24,84 L84,84" />
+        android:pathData="M28,80 L82,80" />
+
+    <!-- Rising chart line. -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="6"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M28,70 L46,58 L62,64 L82,36" />
+
+    <!-- Arrowhead chevron at the tip (points up-right). -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="6"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M70,38 L82,36 L80,48" />
+
+    <!-- Origin node. -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M28,70 m-4.5,0 a4.5,4.5 0 1,0 9,0 a4.5,4.5 0 1,0 -9,0" />
 </vector>

@@ -53,9 +53,10 @@ export default function FrostedCard({
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{scale: scale.value}],
-    opacity: 1 - 0.06 * press.value,
+    opacity: 1 - 0.03 * press.value,
   }));
-  const glowStyle = useAnimatedStyle(() => ({opacity: press.value}));
+  // A soft, capped glow — never a hard full-opacity outline.
+  const glowStyle = useAnimatedStyle(() => ({opacity: press.value * 0.5}));
 
   const halo = glowColor || (onPress ? colors.accent : null);
 
@@ -107,6 +108,6 @@ const styles = StyleSheet.create({
   padded: {padding: spacing.lg},
   glowBorder: {
     ...StyleSheet.absoluteFillObject,
-    borderWidth: 1.5,
+    borderWidth: 1,
   },
 });

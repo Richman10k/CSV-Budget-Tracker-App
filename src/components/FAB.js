@@ -3,8 +3,8 @@
  *
  * Tapping the main button springs it open into a stack of mini frosted action
  * cards (icon + label), each entering with a staggered spring. The "+" rotates
- * to an "×", a dim backdrop catches outside taps, and every interaction fires a
- * subtle built-in haptic. All motion runs on the UI thread (Reanimated).
+ * to an "×" and a dim backdrop catches outside taps. All motion runs on the UI
+ * thread (Reanimated). (Haptics are a no-op — the app ships with no permissions.)
  *
  * Pass `actions`: [{ icon, label, onPress, color? }]. With a single action it
  * acts as a plain floating button (no menu).

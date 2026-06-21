@@ -1,31 +1,22 @@
 /**
- * haptics.js — tiny tactile-feedback helper.
+ * haptics.js — tactile-feedback stub (intentionally a no-op).
  *
- * Uses React Native's built-in Vibration API so we get subtle haptics with no
- * extra native dependency. Durations are tuned to feel like a light "tick" on
- * Android; iOS plays its fixed system vibration. All calls are guarded so they
- * never throw on devices without a vibrator.
+ * This app ships with ZERO Android permissions on purpose (it's 100% offline —
+ * see android/app/src/main/AndroidManifest.xml). React Native's Vibration API
+ * requires the VIBRATE permission; calling it without that permission throws a
+ * native SecurityException that crosses the bridge asynchronously and CRASHES
+ * the app on the very interaction that triggered it (e.g. switching tabs).
+ *
+ * Rather than add a permission and widen the app's footprint, haptics are
+ * disabled. The premium press feedback is purely visual (Reanimated scale +
+ * glow). These functions stay as no-ops so call sites remain stable and a future
+ * maintainer can re-enable haptics in one place if the VIBRATE permission is
+ * ever added.
  */
-import {Vibration} from 'react-native';
+export function tapHaptic() {}
 
-export function tapHaptic() {
-  try {
-    Vibration.vibrate(8);
-  } catch (e) {
-    // no vibrator / not permitted — ignore
-  }
-}
+export function selectionHaptic() {}
 
-export function selectionHaptic() {
-  try {
-    Vibration.vibrate(5);
-  } catch (e) {}
-}
-
-export function successHaptic() {
-  try {
-    Vibration.vibrate([0, 12, 45, 18]);
-  } catch (e) {}
-}
+export function successHaptic() {}
 
 export default {tapHaptic, selectionHaptic, successHaptic};
